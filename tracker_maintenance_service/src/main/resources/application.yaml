@@ -12,10 +12,12 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
 
   sql:
     init:
       mode: never
+
+jwt:
+  signerKey: ${JWT_SIGNER_KEY}
+  valid-duration: 300 # in second
+  refreshable-duration: 1800 # in second
