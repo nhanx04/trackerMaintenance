@@ -14,13 +14,22 @@ public enum ErrorCode {
     USER_ID_NOT_EXISTED( "User id not existed", HttpStatus.NOT_FOUND),
     USERNAME_EXISTED( "Username existed", HttpStatus.BAD_REQUEST),
     USER_DISABLED( "User is disabled", HttpStatus.FORBIDDEN),
+    DEVICE_ID_NOT_EXISTED( "Device id not existed", HttpStatus.NOT_FOUND),
+    DEVICE_CODE_EXISTED( "Device code existed", HttpStatus.BAD_REQUEST),
+    DEVICE_CODE_REQUIRED( "Device code is required", HttpStatus.BAD_REQUEST),
+    DEVICE_NAME_REQUIRED( "Device name is required", HttpStatus.BAD_REQUEST),
+    INVALID_KEY( "Invalid key", HttpStatus.BAD_REQUEST)
     ;
 
     ErrorCode( String message, HttpStatus statusCode) {
         this.message = message;
         this.statusCode = statusCode;
     }
+    public static class Key {
+        public static final String DEVICE_CODE_REQUIRED = "DEVICE_CODE_REQUIRED";
+        public static final String DEVICE_NAME_REQUIRED = "DEVICE_NAME_REQUIRED";
+    }
 
-    String message;
-    HttpStatus statusCode;
+    final String message;
+    final HttpStatus statusCode;
 }
