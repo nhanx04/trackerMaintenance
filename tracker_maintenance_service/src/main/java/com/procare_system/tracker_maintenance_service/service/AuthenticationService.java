@@ -18,11 +18,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.StringJoiner;
 import java.util.UUID;
 
 @Service
@@ -76,7 +78,7 @@ public class AuthenticationService {
                 .username(user.getUsername())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
-                .role(user.getRole())
+                .roles(user.getRoles())
                 .token(token)
                 .authenticated(isAuthenticated)
                 .build();
@@ -99,7 +101,7 @@ public class AuthenticationService {
                 .username(user.getUsername())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
-                .role(user.getRole())
+                .roles(user.getRoles())
                 .token(newToken)
                 .authenticated(true)
                 .build();
@@ -134,7 +136,7 @@ public class AuthenticationService {
                         Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()
                 ))
                 .jwtID(UUID.randomUUID().toString())
-                .claim("role", user.getRole().toString())
+                .claim("scope", buildScope(user))
                 .build();
 
         Payload payload = new Payload(claimsSet.toJSONObject());
@@ -147,5 +149,16 @@ public class AuthenticationService {
             throw new RuntimeException(e);
         }
         return jwsObject.serialize();
+    }
+
+    private String buildScope(User user) {
+        StringJoiner stringJoiner = new StringJoiner(" ");
+
+        if (!CollectionUtils.isEmpty(user.getRoles()))
+            user.getRoles().forEach(role ->
+                    stringJoiner.add("ROLE_" + role.name())
+            );
+
+        return stringJoiner.toString();
     }
 }

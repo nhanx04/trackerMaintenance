@@ -4,6 +4,8 @@ import com.procare_system.tracker_maintenance_service.enums.Role;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.Set;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -12,5 +14,5 @@ import lombok.experimental.FieldDefaults;
 public class UpdateUserRequest {
     String firstName;
     String lastName;
-    Role role;
+    Set<Role> roles;
 }

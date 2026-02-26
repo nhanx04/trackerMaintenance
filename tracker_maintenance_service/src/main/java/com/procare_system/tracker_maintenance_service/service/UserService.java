@@ -14,6 +14,8 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class UserService {
     UserRepository userRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
+
 
     public UserResponse createUser(CreateUserRequest request) {
 
@@ -41,6 +44,7 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse getUserInfo(String id) {
         User user =userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_ID_NOT_EXISTED));
@@ -56,13 +60,14 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-
+    @PreAuthorize("hasRole('ADMIN')")
     public Page<UserResponse> getAllUsers(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return userRepository.findAllByActiveTrue(pageable)
                 .map(userMapper::toUserResponse);
     }
 
+    @PostAuthorize("hasRole('ADMIN') or returnObject.username == authentication.name")
     public UserResponse updateUser(String id, UpdateUserRequest request) {
         User user =userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_ID_NOT_EXISTED));
@@ -73,6 +78,7 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteUser(String id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_ID_NOT_EXISTED));

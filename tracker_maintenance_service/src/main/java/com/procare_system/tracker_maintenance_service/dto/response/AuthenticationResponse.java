@@ -4,6 +4,8 @@ import com.procare_system.tracker_maintenance_service.enums.Role;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.Set;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,7 +16,7 @@ public class AuthenticationResponse {
     String username;
     String firstName;
     String lastName;
-    Role role;
+    Set<Role> roles;
 
     String token;
     boolean authenticated;

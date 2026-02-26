@@ -11,6 +11,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
 
 @Configuration
 @RequiredArgsConstructor
@@ -21,13 +23,14 @@ public class ApplicationInitConfig {
     @Bean
     ApplicationRunner applicationRunner(UserRepository userRepository) {
         return args -> {
-
+            Set<Role> roles = new HashSet<Role>();
+            roles.add(Role.ADMIN);
             if(userRepository.findByUsername("admin").isEmpty()) {
                 User user = User.builder()
                         .username("admin")
                         .password(passwordEncoder.encode("admin"))
                         .active(true)
-                        .role(Role.ADMIN)
+                        .roles(roles)
                         .build();
 
                 userRepository.save(user);

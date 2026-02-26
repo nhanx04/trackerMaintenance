@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
     UNCATEGORIZED_EXCEPTION("Uncategorize exception", HttpStatus.INTERNAL_SERVER_ERROR),
     UNAUTHENTICATED( "Unauthenticated", HttpStatus.UNAUTHORIZED),
+    UNAUTHORIZED( "Unauthorized", HttpStatus.FORBIDDEN),
     USERNAME_NOT_EXISTED( "Username not existed", HttpStatus.NOT_FOUND),
     USER_ID_NOT_EXISTED( "User id not existed", HttpStatus.NOT_FOUND),
     USERNAME_EXISTED( "Username existed", HttpStatus.BAD_REQUEST),
@@ -18,7 +19,8 @@ public enum ErrorCode {
     DEVICE_CODE_EXISTED( "Device code existed", HttpStatus.BAD_REQUEST),
     DEVICE_CODE_REQUIRED( "Device code is required", HttpStatus.BAD_REQUEST),
     DEVICE_NAME_REQUIRED( "Device name is required", HttpStatus.BAD_REQUEST),
-    INVALID_KEY( "Invalid key", HttpStatus.BAD_REQUEST)
+    INVALID_KEY( "Invalid key", HttpStatus.BAD_REQUEST),
+    INVALID_ENUM_VALUE( "Invalid enum value", HttpStatus.BAD_REQUEST)
     ;
 
     ErrorCode( String message, HttpStatus statusCode) {

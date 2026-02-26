@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -31,6 +32,7 @@ public class DeviceService {
     DeviceRepository deviceRepository;
     DeviceMapper deviceMapper;
 
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public DeviceResponse createDevice(CreateDeviceRequest request) {
         if (deviceRepository.existsByCode(request.getCode())) {
             throw new AppException(ErrorCode.DEVICE_CODE_EXISTED);
@@ -74,6 +76,7 @@ public class DeviceService {
                 .map(deviceMapper::toDeviceResponse);
     }
 
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public DeviceResponse updateDevice(String id, UpdateDeviceRequest request) {
         Device device = deviceRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DEVICE_ID_NOT_EXISTED));
@@ -84,6 +87,7 @@ public class DeviceService {
         return deviceMapper.toDeviceResponse(device);
     }
 
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public void deleteDevice(String id) {
         Device device = deviceRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DEVICE_ID_NOT_EXISTED));
