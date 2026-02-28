@@ -1,4 +1,7 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
   application:
     name: tracker_maintenance_service
 
@@ -19,5 +22,5 @@ spring:
 
 jwt:
   signerKey: ${JWT_SIGNER_KEY}
-  valid-duration: 300 # in second
-  refreshable-duration: 1800 # in second
+  valid-duration: 300
+  refreshable-duration: 1800

@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, NavLink, useLocation } from 'react-router'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router'
 import { FiBell, FiChevronDown, FiLogOut, FiMenu, FiMoon, FiSearch, FiSun, FiUser, FiX } from 'react-icons/fi'
 
 import { roleMenu } from '@/lib/navigation'
 import { cn } from '@/lib/cn'
 import type { UserRole } from '@/types/ui'
 import { RoleBadge } from '@/components/ui-custom/RoleBadge'
+import { getAuth, getPrimaryUiRole, logout } from '@/lib/auth'
 
 type AppLayoutProps = {
   children: React.ReactNode
 }
 
 const roleFromPath = (pathname: string): UserRole => {
+  if (pathname.startsWith('/admin')) return 'Admin'
   if (pathname.startsWith('/technician')) return 'Technician'
   if (pathname.startsWith('/reporter')) return 'Reporter'
   return 'Manager'
@@ -19,11 +21,13 @@ const roleFromPath = (pathname: string): UserRole => {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [dark, setDark] = useState(false)
 
-  const role = useMemo(() => roleFromPath(pathname), [pathname])
+  const auth = getAuth()
+  const role = useMemo(() => (auth ? getPrimaryUiRole(auth) : roleFromPath(pathname)), [auth, pathname])
   const items = roleMenu[role]
 
   useEffect(() => {
@@ -33,11 +37,22 @@ export function AppLayout({ children }: AppLayoutProps) {
     document.documentElement.classList.toggle('dark', isDark)
   }, [])
 
+  useEffect(() => {
+    if (!auth && pathname !== '/login' && pathname !== '/') {
+      navigate('/login')
+    }
+  }, [auth, navigate, pathname])
+
   const toggleTheme = () => {
     const next = !dark
     setDark(next)
     localStorage.setItem('theme', next ? 'dark' : 'light')
     document.documentElement.classList.toggle('dark', next)
+  }
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
   }
 
   return (
@@ -53,7 +68,10 @@ export function AppLayout({ children }: AppLayoutProps) {
             <Link to='/' className='text-lg font-bold tracking-tight text-blue-700 dark:text-blue-400'>
               Maintenance Tracker
             </Link>
-            <button onClick={() => setSidebarOpen(false)} className='rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden'>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className='rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden'
+            >
               <FiX className='h-5 w-5' />
             </button>
           </div>
@@ -84,13 +102,18 @@ export function AppLayout({ children }: AppLayoutProps) {
           </nav>
         </aside>
 
-        {sidebarOpen && <button className='fixed inset-0 z-30 bg-slate-950/40 lg:hidden' onClick={() => setSidebarOpen(false)} />}
+        {sidebarOpen && (
+          <button className='fixed inset-0 z-30 bg-slate-950/40 lg:hidden' onClick={() => setSidebarOpen(false)} />
+        )}
 
         <div className='flex min-w-0 flex-1 flex-col'>
           <header className='sticky top-0 z-20 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 lg:px-6'>
             <div className='flex items-center justify-between gap-3'>
               <div className='flex items-center gap-2'>
-                <button onClick={() => setSidebarOpen(true)} className='rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden'>
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className='rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden'
+                >
                   <FiMenu className='h-5 w-5' />
                 </button>
                 <div className='hidden items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800 sm:flex'>
@@ -120,7 +143,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                       <FiUser className='h-4 w-4' />
                     </div>
                     <div className='hidden text-left sm:block'>
-                      <p className='text-xs font-semibold'>John Doe</p>
+                      <p className='text-xs font-semibold'>{auth?.firstName || auth?.username || 'User'}</p>
                       <RoleBadge role={role} className='mt-0.5' />
                     </div>
                     <FiChevronDown className='h-4 w-4 text-slate-500' />
@@ -131,7 +154,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                       <button className='flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700'>
                         <FiUser className='h-4 w-4' /> Profile
                       </button>
-                      <button className='flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'>
+                      <button
+                        onClick={handleLogout}
+                        className='flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'
+                      >
                         <FiLogOut className='h-4 w-4' /> Logout
                       </button>
                     </div>
@@ -147,4 +173,3 @@ export function AppLayout({ children }: AppLayoutProps) {
     </div>
   )
 }
-

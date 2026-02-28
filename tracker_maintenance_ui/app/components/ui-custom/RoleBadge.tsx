@@ -1,4 +1,4 @@
-import { FiShield, FiTool, FiUser } from 'react-icons/fi'
+import { FiShield, FiTool, FiUser, FiUserCheck } from 'react-icons/fi'
 
 import type { UserRole } from '@/types/ui'
 import { cn } from '@/lib/cn'
@@ -9,6 +9,10 @@ type RoleBadgeProps = {
 }
 
 const roleConfig: Record<UserRole, { icon: React.ComponentType<{ className?: string }>; className: string }> = {
+  Admin: {
+    icon: FiUserCheck,
+    className: 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/15 dark:text-rose-300'
+  },
   Manager: {
     icon: FiShield,
     className: 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/15 dark:text-violet-300'

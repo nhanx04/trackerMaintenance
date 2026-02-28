@@ -5,13 +5,21 @@ import {
   FiGrid,
   FiHardDrive,
   FiPlusCircle,
+  FiSettings,
   FiTool,
+  FiUserPlus,
   FiUsers
 } from 'react-icons/fi'
 
 import type { NavItem, UserRole } from '@/types/ui'
 
 export const roleMenu: Record<UserRole, NavItem[]> = {
+  Admin: [
+    { label: 'Dashboard', path: '/admin/dashboard', icon: FiGrid },
+    { label: 'Users', path: '/admin/users', icon: FiUsers },
+    { label: 'Create User', path: '/admin/users/create', icon: FiUserPlus },
+    { label: 'System Settings', path: '/admin/settings', icon: FiSettings }
+  ],
   Manager: [
     { label: 'Dashboard', path: '/manager/dashboard', icon: FiGrid },
     { label: 'Equipment', path: '/manager/equipment', icon: FiHardDrive },
