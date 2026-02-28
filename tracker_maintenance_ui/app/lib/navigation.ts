@@ -7,7 +7,6 @@ import {
   FiPlusCircle,
   FiSettings,
   FiTool,
-  FiUserPlus,
   FiUsers
 } from 'react-icons/fi'
 
@@ -17,7 +16,6 @@ export const roleMenu: Record<UserRole, NavItem[]> = {
   Admin: [
     { label: 'Dashboard', path: '/admin/dashboard', icon: FiGrid },
     { label: 'Users', path: '/admin/users', icon: FiUsers },
-    { label: 'Create User', path: '/admin/users/create', icon: FiUserPlus },
     { label: 'System Settings', path: '/admin/settings', icon: FiSettings }
   ],
   Manager: [

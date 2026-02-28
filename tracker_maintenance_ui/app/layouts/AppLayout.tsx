@@ -4,6 +4,7 @@ import { FiBell, FiChevronDown, FiLogOut, FiMenu, FiMoon, FiSearch, FiSun, FiUse
 
 import { roleMenu } from '@/lib/navigation'
 import { cn } from '@/lib/cn'
+import type { AuthUser } from '@/types/auth'
 import type { UserRole } from '@/types/ui'
 import { RoleBadge } from '@/components/ui-custom/RoleBadge'
 import { getAuth, getPrimaryUiRole, logout } from '@/lib/auth'
@@ -25,8 +26,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [dark, setDark] = useState(false)
+  const [auth, setAuth] = useState<AuthUser | null>(null)
+  const [authReady, setAuthReady] = useState(false)
 
-  const auth = getAuth()
   const role = useMemo(() => (auth ? getPrimaryUiRole(auth) : roleFromPath(pathname)), [auth, pathname])
   const items = roleMenu[role]
 
@@ -38,10 +40,17 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [])
 
   useEffect(() => {
+    setAuth(getAuth())
+    setAuthReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!authReady) return
+
     if (!auth && pathname !== '/login' && pathname !== '/') {
       navigate('/login')
     }
-  }, [auth, navigate, pathname])
+  }, [auth, authReady, navigate, pathname])
 
   const toggleTheme = () => {
     const next = !dark

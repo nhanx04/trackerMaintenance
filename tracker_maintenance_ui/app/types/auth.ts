@@ -23,3 +23,19 @@ export type CreateUserPayload = {
   roles: BackendRole[]
 }
 
+export type BackendUser = {
+  id: string
+  username: string
+  firstName?: string
+  lastName?: string
+  roles: BackendRole[]
+  active: boolean
+}
+
+export type PageResult<T> = {
+  content: T[]
+  totalPages: number
+  totalElements: number
+  number: number
+  size: number
+}
