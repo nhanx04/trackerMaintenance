@@ -2,10 +2,8 @@ package com.procare_system.tracker_maintenance_service.entity;
 
 import com.procare_system.tracker_maintenance_service.enums.DeviceStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "devices")
@@ -13,24 +11,28 @@ import lombok.Setter;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
+@SuperBuilder
 public class Device extends BaseAuditingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
-    @Column(unique = true, nullable = false)
-    private String code;
+    @Column(unique = true, nullable = false, updatable = false)
+    String code;
 
     @Column(nullable = false)
-    private String name;
+    String name;
 
-    private String description;
+    String description;
 
     @Enumerated(EnumType.STRING)
-    private DeviceStatus status = DeviceStatus.AVAILABLE;
+    @Builder.Default
+    DeviceStatus status = DeviceStatus.AVAILABLE;
 
-    private String imageUrl;
+    String imageUrl;
 
-    private boolean isDeleted = false;
+    String location;
+
+    boolean isDeleted = false;
 
 }

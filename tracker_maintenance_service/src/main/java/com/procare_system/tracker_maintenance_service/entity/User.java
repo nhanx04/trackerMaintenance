@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.util.List;
+import java.util.Set;
+
 @Entity
 @Table(name = "users")
 @Setter
@@ -27,9 +30,14 @@ public class User extends BaseAuditingEntity {
 
     private String lastName;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id")
+    )
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role;
+    @Column(name = "role")
+    private Set<Role> roles;
 
     @Column(name = "active", nullable = false)
     private boolean active = true;
