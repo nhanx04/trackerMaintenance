@@ -30,6 +30,13 @@ public enum ErrorCode {
     TICKET_ALREADY_CANCELLED( "Ticket is already cancelled", HttpStatus.BAD_REQUEST),
     TICKET_CANNOT_CANCEL( "Only PENDING or IN_PROGRESS tickets can be cancelled", HttpStatus.BAD_REQUEST),
     ACCESS_DENIED( "Access denied", HttpStatus.FORBIDDEN),
+    FILE_EMPTY( "File must not be empty", HttpStatus.BAD_REQUEST),
+    FILE_TOO_LARGE( "File size exceeds 10MB limit", HttpStatus.BAD_REQUEST),
+    FILE_INVALID_TYPE( "Only JPEG, PNG, WEBP, HEIC are allowed", HttpStatus.BAD_REQUEST),
+    FILE_TOO_MANY( "Maximum 10 images per upload", HttpStatus.BAD_REQUEST),
+    FILE_UPLOAD_FAILED( "Failed to upload file to storage", HttpStatus.INTERNAL_SERVER_ERROR),
+    IMAGE_NOT_FOUND( "Image not found", HttpStatus.NOT_FOUND),
+    IMAGE_NOT_BELONG_TO_TICKET( "Image does not belong to this ticket", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode( String message, HttpStatus statusCode) {
