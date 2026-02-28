@@ -20,7 +20,16 @@ public enum ErrorCode {
     DEVICE_CODE_REQUIRED( "Device code is required", HttpStatus.BAD_REQUEST),
     DEVICE_NAME_REQUIRED( "Device name is required", HttpStatus.BAD_REQUEST),
     INVALID_KEY( "Invalid key", HttpStatus.BAD_REQUEST),
-    INVALID_ENUM_VALUE( "Invalid enum value", HttpStatus.BAD_REQUEST)
+    INVALID_ENUM_VALUE( "Invalid enum value", HttpStatus.BAD_REQUEST),
+    TICKET_NOT_FOUND( "Ticket not found", HttpStatus.NOT_FOUND),
+    TICKET_TITLE_BLANK( "Ticket title must not be blank", HttpStatus.BAD_REQUEST),
+    TICKET_PRIORITY_NULL( "Ticket priority must not be null", HttpStatus.BAD_REQUEST),
+    TICKET_DEVICE_NULL( "Device ID must not be blank", HttpStatus.BAD_REQUEST),
+    TICKET_DATE_PAST( "Scheduled date must be today or in the future", HttpStatus.BAD_REQUEST),
+    TICKET_INVALID_STATUS_TRANSITION( "Invalid ticket status transition", HttpStatus.BAD_REQUEST),
+    TICKET_ALREADY_CANCELLED( "Ticket is already cancelled", HttpStatus.BAD_REQUEST),
+    TICKET_CANNOT_CANCEL( "Only PENDING or IN_PROGRESS tickets can be cancelled", HttpStatus.BAD_REQUEST),
+    ACCESS_DENIED( "Access denied", HttpStatus.FORBIDDEN),
     ;
 
     ErrorCode( String message, HttpStatus statusCode) {
