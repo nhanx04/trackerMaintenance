@@ -1,3 +1,17 @@
 import { type RouteConfig, index, route } from '@react-router/dev/routes'
 
-export default [index('welcome/welcome.tsx'), route('home', 'module/home/index.tsx')] satisfies RouteConfig
+export default [
+  index('welcome/welcome.tsx'),
+  route('home', 'module/home/index.tsx'),
+  route('login', 'module/auth/login.tsx'),
+  route('manager/dashboard', 'module/manager/dashboard.tsx'),
+  route('manager/equipment', 'module/manager/equipment.tsx'),
+  route('manager/tickets', 'module/manager/tickets.tsx'),
+  route('manager/users', 'module/manager/users.tsx'),
+  route('manager/history', 'module/manager/history.tsx'),
+  route('manager/reports', 'module/manager/reports.tsx'),
+  route('technician/my-tickets', 'module/technician/myTickets.tsx'),
+  route('technician/available-tickets', 'module/technician/availableTickets.tsx'),
+  route('reporter/my-tickets', 'module/reporter/myTickets.tsx'),
+  route('reporter/create-ticket', 'module/reporter/createTicket.tsx')
+] satisfies RouteConfig
