@@ -147,7 +147,8 @@ public class TicketImageService {
     }
 
     private String currentUserId() {
-        return currentAuth().getName();
+        var jwt = (org.springframework.security.oauth2.jwt.Jwt) currentAuth().getPrincipal();
+        return jwt.getClaimAsString("userId");
     }
 
     private boolean hasRole(Authentication auth, String role) {
