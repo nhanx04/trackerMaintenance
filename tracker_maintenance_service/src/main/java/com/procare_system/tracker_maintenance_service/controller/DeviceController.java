@@ -25,7 +25,7 @@ public class DeviceController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<DeviceResponse> getDeviceById(@PathVariable String id) {
+    public ApiResponse<DeviceResponse> getDeviceById(@PathVariable Long id) {
         return ApiResponse.<DeviceResponse>builder()
                 .result(deviceService.getDeviceById(id))
                 .build();
@@ -46,7 +46,7 @@ public class DeviceController {
 
     @PutMapping("/{id}")
     public ApiResponse<DeviceResponse> updateDevice(
-            @PathVariable String id,
+            @PathVariable Long id,
             @RequestBody @Valid UpdateDeviceRequest request) {
         return ApiResponse.<DeviceResponse>builder()
                 .result(deviceService.updateDevice(id, request))
@@ -54,7 +54,7 @@ public class DeviceController {
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<String> deleteDevice(@PathVariable String id) {
+    public ApiResponse<String> deleteDevice(@PathVariable Long id) {
         deviceService.deleteDevice(id);
         return ApiResponse.<String>builder()
                 .result("Device has been deleted successfully")

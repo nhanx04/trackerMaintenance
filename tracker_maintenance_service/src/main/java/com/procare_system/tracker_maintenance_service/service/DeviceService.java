@@ -44,7 +44,7 @@ public class DeviceService {
         return deviceMapper.toDeviceResponse(device);
     }
 
-    public DeviceResponse getDeviceById(String id) {
+    public DeviceResponse getDeviceById(Long id) {
         Device device = deviceRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DEVICE_ID_NOT_EXISTED));
         return deviceMapper.toDeviceResponse(device);
@@ -77,7 +77,7 @@ public class DeviceService {
     }
 
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
-    public DeviceResponse updateDevice(String id, UpdateDeviceRequest request) {
+    public DeviceResponse updateDevice(Long id, UpdateDeviceRequest request) {
         Device device = deviceRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DEVICE_ID_NOT_EXISTED));
 
@@ -88,7 +88,7 @@ public class DeviceService {
     }
 
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
-    public void deleteDevice(String id) {
+    public void deleteDevice(Long id) {
         Device device = deviceRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DEVICE_ID_NOT_EXISTED));
 
