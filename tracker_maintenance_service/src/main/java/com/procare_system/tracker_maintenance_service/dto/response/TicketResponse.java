@@ -8,6 +8,8 @@ import lombok.experimental.FieldDefaults;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor @AllArgsConstructor @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -23,4 +25,7 @@ public class TicketResponse {
     LocalDate scheduledDate;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
+
+    List<TicketImageResponse> beforeImages;
+    List<TicketImageResponse> afterImages;
 }
