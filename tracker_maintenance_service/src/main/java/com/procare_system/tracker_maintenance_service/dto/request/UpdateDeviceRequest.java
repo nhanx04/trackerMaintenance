@@ -16,6 +16,5 @@ public class UpdateDeviceRequest {
     String name;
     String description;
     String location;
-    String imageUrl;
     DeviceStatus status;
 }

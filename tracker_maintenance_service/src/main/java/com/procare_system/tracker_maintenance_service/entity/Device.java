@@ -31,6 +31,8 @@ public class Device extends BaseAuditingEntity {
 
     String imageUrl;
 
+    String imageObjectKey;
+
     String location;
 
     boolean isDeleted = false;

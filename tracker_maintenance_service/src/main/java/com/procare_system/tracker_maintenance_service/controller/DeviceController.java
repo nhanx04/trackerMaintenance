@@ -9,7 +9,9 @@ import com.procare_system.tracker_maintenance_service.service.DeviceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/devices")
@@ -58,6 +60,26 @@ public class DeviceController {
         deviceService.deleteDevice(id);
         return ApiResponse.<String>builder()
                 .result("Device has been deleted successfully")
+                .build();
+    }
+
+    @PostMapping(
+            value = "/{id}/image",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ApiResponse<DeviceResponse> uploadDeviceImage(
+            @PathVariable Long id,
+            @RequestPart("file") MultipartFile file) {
+
+        return ApiResponse.<DeviceResponse>builder()
+                .result(deviceService.uploadDeviceImage(id, file))
+                .build();
+    }
+
+    @DeleteMapping("/{id}/image")
+    public ApiResponse<String> deleteDeviceImage(@PathVariable Long id) {
+        return ApiResponse.<String>builder()
+                .result("Device image has been deleted successfully")
                 .build();
     }
 }

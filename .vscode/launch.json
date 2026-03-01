@@ -8,7 +8,8 @@
       "type": "java",
       "name": "Current File",
       "request": "launch",
-      "mainClass": "${file}"
+      "mainClass": "${file}",
+      "envFile": "D:/trackerMaintenance/tracker_maintenance_service/.env"
     },
     {
       "type": "java",
@@ -16,7 +17,7 @@
       "request": "launch",
       "mainClass": "com.procare_system.tracker_maintenance_service.TrackerMaintenanceServiceApplication",
       "projectName": "tracker_maintenance_service",
-      "envFile": "${workspaceFolder}/.env"
+      "envFile": "D:/trackerMaintenance/tracker_maintenance_service/.env"
     }
   ]
 }

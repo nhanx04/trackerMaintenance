@@ -18,6 +18,5 @@ public class CreateDeviceRequest {
     String name;
     String description;
     String location;
-    String imageUrl;
     DeviceStatus status;
 }

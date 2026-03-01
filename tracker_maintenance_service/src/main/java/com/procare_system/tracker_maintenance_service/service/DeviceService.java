@@ -19,7 +19,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +33,7 @@ import java.util.List;
 public class DeviceService {
     DeviceRepository deviceRepository;
     DeviceMapper deviceMapper;
+    R2StorageService r2StorageService;
 
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public DeviceResponse createDevice(CreateDeviceRequest request) {
@@ -94,5 +97,50 @@ public class DeviceService {
 
         device.setDeleted(true);
         deviceRepository.save(device);
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    public DeviceResponse uploadDeviceImage(Long deviceId, MultipartFile file) {
+
+        Device device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new AppException(ErrorCode.DEVICE_ID_NOT_EXISTED));
+
+        String folder = "devices/" + deviceId;
+
+        String newObjectKey = r2StorageService
+                .uploadImages(List.of(file), folder)
+                .getFirst();
+
+        String oldObjectKey = device.getImageObjectKey();
+
+        device.setImageObjectKey(newObjectKey);
+        device.setImageUrl(r2StorageService.toPublicUrl(newObjectKey));
+        deviceRepository.save(device);
+
+        // xoá sau khi DB update thành công
+        if (oldObjectKey != null) {
+            r2StorageService.deleteImage(oldObjectKey);
+        }
+
+        return deviceMapper.toDeviceResponse(device);
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    public DeviceResponse deleteDeviceImage(Long deviceId) {
+        Device device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new AppException(ErrorCode.DEVICE_ID_NOT_EXISTED));
+
+        String oldKey = device.getImageObjectKey();
+        if (oldKey != null) {
+            r2StorageService.deleteImage(oldKey);
+        }
+
+        device.setImageObjectKey(null);
+        device.setImageUrl(null);
+        deviceRepository.save(device);
+
+        return deviceMapper.toDeviceResponse(device);
     }
 }

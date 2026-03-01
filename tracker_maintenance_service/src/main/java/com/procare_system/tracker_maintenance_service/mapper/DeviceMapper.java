@@ -16,7 +16,6 @@ public class DeviceMapper {
                 .name(request.getName())
                 .description(request.getDescription())
                 .location(request.getLocation())
-                .imageUrl(request.getImageUrl())
                 .status(request.getStatus() != null ? request.getStatus() : DeviceStatus.AVAILABLE)
                 .isDeleted(false)
                 .build();
@@ -24,12 +23,10 @@ public class DeviceMapper {
 
     // Hàm update nhận vào UpdateDeviceRequest
     public void updateDevice(UpdateDeviceRequest request, Device device) {
-        // Không hề đụng đến field 'code' của entity -> An toàn tuyệt đối
         if (request.getName() != null) device.setName(request.getName());
         if (request.getDescription() != null) device.setDescription(request.getDescription());
         if (request.getLocation() != null) device.setLocation(request.getLocation());
         if (request.getStatus() != null) device.setStatus(request.getStatus());
-        if (request.getImageUrl() != null) device.setImageUrl(request.getImageUrl());
     }
 
     public DeviceResponse toDeviceResponse(Device device) {
