@@ -1,8 +1,8 @@
 import type { PageResult } from './auth'
 
-export type TicketStatus   = 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'
+export type TicketStatus = 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'
 export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH'
-export type ImageType      = 'BEFORE' | 'AFTER'
+export type ImageType = 'BEFORE' | 'AFTER'
 
 export interface TicketImage {
   id: string
@@ -55,3 +55,13 @@ export interface TicketFilter {
   page: number
   size: number
 }
+
+// export type CreateTicketForm = {
+//   title: string
+//   deviceId: string
+//   priority?: TicketPriority
+//   description?: string
+//   scheduledDate?: string
+// }
+
+// export type CreateTicketErrors = Partial<Record<keyof CreateTicketForm, string>>
