@@ -2,14 +2,33 @@ import { cn } from '@/lib/cn'
 import { formatDate, priorityLabel, priorityStyle, statusLabel, statusStyle } from '@/lib/ticketUtils'
 import type { Ticket } from '@/types/ticket'
 
+type ActionStyle = 'blue' | 'emerald' | 'rose'
+
 type TicketTableProps = {
   tickets: Ticket[]
-  onView?: (ticket: Ticket) => void
-  onCancel?: (ticket: Ticket) => void
   showAssignee?: boolean
+  /** Primary action button — omit to hide */
+  onView?: (ticket: Ticket) => void
+  actionLabel?: string
+  actionStyle?: ActionStyle
+  /** Secondary cancel — only shown on PENDING tickets */
+  onCancel?: (ticket: Ticket) => void
 }
 
-export function TicketTable({ tickets, onView, onCancel, showAssignee = false }: TicketTableProps) {
+const actionStyles: Record<ActionStyle, string> = {
+  blue: 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-500/10',
+  emerald: 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10',
+  rose: 'text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'
+}
+
+export function TicketTable({
+  tickets,
+  showAssignee = false,
+  onView,
+  actionLabel = 'View',
+  actionStyle = 'blue',
+  onCancel
+}: TicketTableProps) {
   return (
     <div className='overflow-x-auto'>
       <table className='w-full text-sm'>
@@ -21,7 +40,7 @@ export function TicketTable({ tickets, onView, onCancel, showAssignee = false }:
             <th className='pb-3 pr-4 font-semibold text-slate-600 dark:text-slate-400'>Device ID</th>
             {showAssignee && <th className='pb-3 pr-4 font-semibold text-slate-600 dark:text-slate-400'>Assignee</th>}
             <th className='pb-3 pr-4 font-semibold text-slate-600 dark:text-slate-400'>Created</th>
-            <th className='pb-3 font-semibold text-slate-600 dark:text-slate-400'>Actions</th>
+            {(onView || onCancel) && <th className='pb-3 font-semibold text-slate-600 dark:text-slate-400'>Actions</th>}
           </tr>
         </thead>
         <tbody className='divide-y divide-slate-100 dark:divide-slate-800'>
@@ -68,26 +87,31 @@ export function TicketTable({ tickets, onView, onCancel, showAssignee = false }:
 
               <td className='py-3 pr-4 text-xs text-slate-500 dark:text-slate-400'>{formatDate(ticket.createdAt)}</td>
 
-              <td className='py-3'>
-                <div className='flex items-center gap-2'>
-                  {onView && (
-                    <button
-                      onClick={() => onView(ticket)}
-                      className='rounded-md px-2.5 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-500/10'
-                    >
-                      View
-                    </button>
-                  )}
-                  {onCancel && ticket.status === 'PENDING' && (
-                    <button
-                      onClick={() => onCancel(ticket)}
-                      className='rounded-md px-2.5 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </td>
+              {(onView || onCancel) && (
+                <td className='py-3'>
+                  <div className='flex items-center gap-2'>
+                    {onView && (
+                      <button
+                        onClick={() => onView(ticket)}
+                        className={cn(
+                          'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                          actionStyles[actionStyle]
+                        )}
+                      >
+                        {actionLabel}
+                      </button>
+                    )}
+                    {onCancel && ticket.status === 'PENDING' && (
+                      <button
+                        onClick={() => onCancel(ticket)}
+                        className='rounded-md px-2.5 py-1 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

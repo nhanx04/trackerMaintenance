@@ -19,6 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.procare_system.tracker_maintenance_service.enums.Role;
 
 
 @Service
@@ -86,4 +87,14 @@ public class UserService {
         user.setActive(false);
         userRepository.save(user);
     }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    public Page<UserResponse> getUsersByRole(Role role, int page, int size){
+        Pageable pageable = PageRequest.of(page, size);
+
+        return userRepository
+                .findByRolesContainingAndActiveTrue(role, pageable)
+                .map(userMapper::toUserResponse);
+    }
 }
+

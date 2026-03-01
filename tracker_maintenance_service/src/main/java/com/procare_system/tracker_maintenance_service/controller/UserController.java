@@ -8,6 +8,7 @@ import com.procare_system.tracker_maintenance_service.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
+import com.procare_system.tracker_maintenance_service.enums.Role;
 
 @RestController
 @RequestMapping("/api/users")
@@ -57,6 +58,17 @@ public class UserController {
         userService.deleteUser(id);
         return ApiResponse.<String>builder()
                 .result("User has been deleted successfully")
+                .build();
+    }
+
+    @GetMapping("/by-role")
+    public ApiResponse<Page<UserResponse>> getUsersByRole(
+            @RequestParam Role role,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        return ApiResponse.<Page<UserResponse>>builder()
+                .result(userService.getUsersByRole(role, page, size))
                 .build();
     }
 
