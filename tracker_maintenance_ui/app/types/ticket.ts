@@ -1,8 +1,8 @@
 import type { PageResult } from './auth'
 
-export type TicketStatus = 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'
+export type TicketStatus   = 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'
 export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH'
-export type ImageType = 'BEFORE' | 'AFTER'
+export type ImageType      = 'BEFORE' | 'AFTER'
 
 export interface TicketImage {
   id: string
