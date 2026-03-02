@@ -43,7 +43,7 @@ export interface UpdateTicketRequest {
   description?: string
   priority?: TicketPriority
   status?: TicketStatus
-  assignedTechnicianId?: string
+  assignedTechnicianId?: string | null
   scheduledDate?: string
 }
 

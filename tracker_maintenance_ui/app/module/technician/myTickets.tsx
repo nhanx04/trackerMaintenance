@@ -8,6 +8,8 @@ import { ticketApi } from '@/lib/ticketApi'
 import { getAuth } from '@/lib/auth'
 import { formatDate, priorityLabel, priorityStyle, statusLabel, statusStyle } from '@/lib/ticketUtils'
 import { cn } from '@/lib/cn'
+import { TicketImageUpload } from '@/module/shared/TicketImageUpload'
+
 import type {
   Ticket,
   TicketFilter,

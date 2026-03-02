@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router'
 import { AppLayout } from '@/layouts/AppLayout'
 import { PageHeader } from '@/components/ui-custom/PageHeader'
 import { InfoCard } from '@/components/ui-custom/InfoCard'
+import { TicketImageUpload } from '@/module/shared/TicketImageUpload'
 import { ticketApi } from '@/lib/ticketApi'
 import type { TicketPriority } from '@/types/ticket'
 
@@ -11,8 +12,6 @@ type FormErrors = {
   title?: string
   deviceId?: string
   priority?: string
-  description?: string
-  scheduledDate?: string
 }
 
 type FormState = {
@@ -37,11 +36,12 @@ export default function ReporterCreateTicketPage() {
   const [errors, setErrors] = useState<Partial<FormErrors>>({})
   const [loading, setLoading] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
+  // After successful create, store the new ticketId to show upload step
+  const [createdTicketId, setCreatedTicketId] = useState<string | null>(null)
 
   function set(field: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
-    // Clear error on change
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }))
+    if (errors[field as keyof FormErrors]) setErrors((prev) => ({ ...prev, [field]: '' }))
   }
 
   function validate(): boolean {
@@ -58,14 +58,15 @@ export default function ReporterCreateTicketPage() {
     setLoading(true)
     setApiError(null)
     try {
-      await ticketApi.create({
+      const ticket = await ticketApi.create({
         title: form.title.trim(),
         deviceId: form.deviceId.trim(),
         priority: form.priority as TicketPriority,
         description: form.description.trim() || undefined,
         scheduledDate: form.scheduledDate || undefined
       })
-      navigate('/reporter/my-tickets')
+      // Move to upload step instead of navigating away
+      setCreatedTicketId(ticket.id)
     } catch (e) {
       setApiError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
@@ -73,6 +74,52 @@ export default function ReporterCreateTicketPage() {
     }
   }
 
+  // ── Step 2: Upload images ────────────────────────────────────────────────
+  if (createdTicketId) {
+    return (
+      <AppLayout>
+        <PageHeader
+          title='Upload Images'
+          subtitle='Optionally attach before/after photos to your ticket.'
+          breadcrumbs={[
+            { label: 'Reporter' },
+            { label: 'My Tickets', href: '/reporter/my-tickets' },
+            { label: 'Upload Images' }
+          ]}
+        />
+        <div className='grid gap-6 lg:grid-cols-[2fr_1fr]'>
+          <section className='rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900'>
+            <div className='mb-5 flex items-center justify-between'>
+              <h3 className='text-base font-semibold text-slate-900 dark:text-white'>Before / After Photos</h3>
+              <span className='rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'>
+                ✓ Ticket created
+              </span>
+            </div>
+            <TicketImageUpload ticketId={createdTicketId} allowedTypes={['before']} />
+            <div className='mt-6 flex justify-end'>
+              <button
+                onClick={() => navigate('/reporter/my-tickets')}
+                className='rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700'
+              >
+                Done — View My Tickets
+              </button>
+            </div>
+          </section>
+          <InfoCard
+            title='Photo Tips'
+            items={[
+              { label: 'Before', value: 'Take before starting any repair' },
+              { label: 'After', value: 'Confirm issue is fully resolved' },
+              { label: 'Max size', value: '10 MB per file' },
+              { label: 'Formats', value: 'PNG, JPG, WEBP' }
+            ]}
+          />
+        </div>
+      </AppLayout>
+    )
+  }
+
+  // ── Step 1: Create ticket form ───────────────────────────────────────────
   return (
     <AppLayout>
       <PageHeader
@@ -86,7 +133,6 @@ export default function ReporterCreateTicketPage() {
       />
 
       <div className='grid gap-6 lg:grid-cols-[2fr_1fr]'>
-        {/* Form */}
         <section className='rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900'>
           <h3 className='mb-4 text-base font-semibold text-slate-900 dark:text-white'>Ticket Information</h3>
 
@@ -97,7 +143,6 @@ export default function ReporterCreateTicketPage() {
           )}
 
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-            {/* Title */}
             <div className='sm:col-span-2'>
               <label className='mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400'>
                 Title <span className='text-rose-500'>*</span>
@@ -111,7 +156,6 @@ export default function ReporterCreateTicketPage() {
               {errors.title && <p className='mt-1 text-xs text-rose-500'>{errors.title}</p>}
             </div>
 
-            {/* Device ID */}
             <div>
               <label className='mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400'>
                 Device / Equipment ID <span className='text-rose-500'>*</span>
@@ -125,7 +169,6 @@ export default function ReporterCreateTicketPage() {
               {errors.deviceId && <p className='mt-1 text-xs text-rose-500'>{errors.deviceId}</p>}
             </div>
 
-            {/* Priority */}
             <div>
               <label className='mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400'>
                 Priority <span className='text-rose-500'>*</span>
@@ -143,7 +186,6 @@ export default function ReporterCreateTicketPage() {
               {errors.priority && <p className='mt-1 text-xs text-rose-500'>{errors.priority}</p>}
             </div>
 
-            {/* Scheduled Date */}
             <div>
               <label className='mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400'>
                 Preferred Date (optional)
@@ -157,7 +199,6 @@ export default function ReporterCreateTicketPage() {
             </div>
           </div>
 
-          {/* Description */}
           <div className='mt-4'>
             <label className='mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400'>Description</label>
             <textarea
@@ -186,7 +227,6 @@ export default function ReporterCreateTicketPage() {
           </div>
         </section>
 
-        {/* Guidelines */}
         <InfoCard
           title='Guidelines'
           items={[

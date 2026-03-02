@@ -105,7 +105,7 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete }: Dra
     setAssignSuccess(false)
     try {
       const payload: UpdateTicketRequest = {
-        assignedTechnicianId: assignId || undefined
+        assignedTechnicianId: assignId === '' ? null : assignId
       }
       await ticketApi.update(ticket.id, payload)
       setAssignSuccess(true)
