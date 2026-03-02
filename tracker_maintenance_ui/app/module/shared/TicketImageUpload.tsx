@@ -127,6 +127,8 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const [lightboxSrc, setLightbox] = useState<string | null>(null)
+  const [imageToDelete, setImageToDelete] = useState<string | null>(null)
+  const [deletingImage, setDeletingImage] = useState(false)
 
   async function fetchImages() {
     setLoading(true)
@@ -191,14 +193,23 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
     }
   }
 
-  async function deleteImage(imageId: string) {
-    if (!confirm('Delete this image? This cannot be undone.')) return
+  async function confirmDeleteImage() {
+    if (!imageToDelete) return
+    setDeletingImage(true)
+
     try {
-      await ticketApi.deleteImage(ticketId, imageId)
-      setImages((prev) => prev.filter((i) => i.id !== imageId))
+      await ticketApi.deleteImage(ticketId, imageToDelete)
+      setImages((prev) => prev.filter((i) => i.id !== imageToDelete))
+      setImageToDelete(null)
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Failed to delete image')
+    } finally {
+      setDeletingImage(false)
     }
+  }
+
+  function deleteImage(imageId: string) {
+    setImageToDelete(imageId)
   }
 
   const beforeImages = images.filter((i) => i.imageType === 'BEFORE')
@@ -377,6 +388,38 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
               onZoom={setLightbox}
             />
           )}
+        </div>
+      )}
+      {imageToDelete && (
+        <div className='fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm'>
+          <div className='w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-2xl dark:border-slate-700 dark:bg-slate-900'>
+            <div className='mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-500/20'>
+              <FiTrash2 className='h-5 w-5 text-rose-600 dark:text-rose-400' />
+            </div>
+
+            <h3 className='mt-3 text-base font-semibold text-slate-900 dark:text-white'>Delete Image?</h3>
+
+            <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>
+              This image will be permanently deleted. This cannot be undone.
+            </p>
+
+            <div className='mt-6 flex justify-center gap-4'>
+              <button
+                onClick={() => setImageToDelete(null)}
+                className='rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={confirmDeleteImage}
+                disabled={deletingImage}
+                className='rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60'
+              >
+                {deletingImage ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -16,6 +16,7 @@ export const roleMenu: Record<UserRole, NavItem[]> = {
   Admin: [
     { label: 'Dashboard', path: '/admin/dashboard', icon: FiGrid },
     { label: 'Users', path: '/admin/users', icon: FiUsers },
+    { label: 'Tickets', path: '/admin/tickets', icon: FiClipboard },
     { label: 'System Settings', path: '/admin/settings', icon: FiSettings }
   ],
   Manager: [

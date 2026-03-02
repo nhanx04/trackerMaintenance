@@ -372,7 +372,7 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete }: Dra
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function ManagerTicketsPage() {
+export default function AdminTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
@@ -529,10 +529,10 @@ export default function ManagerTicketsPage() {
       <PageHeader
         title='Tickets'
         subtitle='View and manage all maintenance tickets.'
-        breadcrumbs={[{ label: 'Manager' }, { label: 'Tickets' }]}
+        breadcrumbs={[{ label: 'Admin' }, { label: 'Tickets' }]}
         action={
           <Link
-            to='/manager/create-ticket'
+            to='/admin/create-ticket'
             className='inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700'
           >
             <FiPlus className='h-4 w-4' />
