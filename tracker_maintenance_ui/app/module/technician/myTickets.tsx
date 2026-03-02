@@ -1,23 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
-import { FiAlertCircle, FiCamera, FiChevronDown, FiImage, FiUpload, FiX } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import { FiAlertCircle, FiChevronDown, FiX } from 'react-icons/fi'
 
 import { AppLayout } from '@/layouts/AppLayout'
 import { PageHeader } from '@/components/ui-custom/PageHeader'
 import { TicketTable } from '@/module/shared/TicketTable'
+import { TicketImageUpload } from '@/module/shared/TicketImageUpload'
 import { ticketApi } from '@/lib/ticketApi'
 import { getAuth } from '@/lib/auth'
-import { formatDate, priorityLabel, priorityStyle, statusLabel, statusStyle } from '@/lib/ticketUtils'
 import { cn } from '@/lib/cn'
-import { TicketImageUpload } from '@/module/shared/TicketImageUpload'
-
-import type {
-  Ticket,
-  TicketFilter,
-  TicketImage,
-  TicketPriority,
-  TicketStatus,
-  UpdateTicketRequest
-} from '@/types/ticket'
+import { formatDate, priorityLabel, priorityStyle, statusLabel, statusStyle } from '@/lib/ticketUtils'
+import type { Ticket, TicketFilter, TicketPriority, TicketStatus, UpdateTicketRequest } from '@/types/ticket'
 
 const PAGE_SIZE = 10
 
@@ -26,7 +18,7 @@ const NEXT_STATUSES: Partial<Record<TicketStatus, TicketStatus[]>> = {
   IN_PROGRESS: ['DONE']
 }
 
-// ─── Drawer ──────────────────────────────────────────────────────────────────
+// ─── Drawer ───────────────────────────────────────────────────────────────────
 
 type DrawerProps = {
   ticket: Ticket
@@ -37,44 +29,18 @@ type DrawerProps = {
 function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
   const [tab, setTab] = useState<'detail' | 'images'>('detail')
 
-  // Status update
   const [nextStatus, setNextStatus] = useState<TicketStatus | ''>('')
   const [statusLoading, setStatusLoading] = useState(false)
   const [statusError, setStatusError] = useState<string | null>(null)
 
-  // Images
-  const [images, setImages] = useState<TicketImage[]>([])
-  const [imagesLoading, setImagesLoading] = useState(false)
-  const [uploadType, setUploadType] = useState<'before' | 'after'>('before')
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
-
   const availableNextStatuses = NEXT_STATUSES[ticket.status] ?? []
-
-  async function fetchImages() {
-    setImagesLoading(true)
-    try {
-      const imgs = await ticketApi.getImages(ticket.id)
-      setImages(imgs)
-    } catch {
-      // non-critical
-    } finally {
-      setImagesLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (tab === 'images') fetchImages()
-  }, [tab])
 
   async function handleUpdateStatus() {
     if (!nextStatus) return
     setStatusLoading(true)
     setStatusError(null)
     try {
-      const payload: UpdateTicketRequest = { status: nextStatus }
-      await ticketApi.update(ticket.id, payload)
+      await ticketApi.update(ticket.id, { status: nextStatus } as UpdateTicketRequest)
       onUpdated()
       onClose()
     } catch (e) {
@@ -84,40 +50,10 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
     }
   }
 
-  async function handleUpload(files: FileList | null) {
-    if (!files || files.length === 0) return
-    setUploading(true)
-    setUploadError(null)
-    try {
-      await ticketApi.uploadImages(ticket.id, uploadType, Array.from(files))
-      await fetchImages()
-    } catch (e) {
-      setUploadError(e instanceof Error ? e.message : 'Upload failed')
-    } finally {
-      setUploading(false)
-      if (fileRef.current) fileRef.current.value = ''
-    }
-  }
-
-  async function handleDeleteImage(imageId: string) {
-    if (!confirm('Delete this image?')) return
-    try {
-      await ticketApi.deleteImage(ticket.id, imageId)
-      setImages((prev) => prev.filter((i) => i.id !== imageId))
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to delete image')
-    }
-  }
-
-  const beforeImages = images.filter((i) => i.imageType === 'BEFORE')
-  const afterImages = images.filter((i) => i.imageType === 'AFTER')
-
   return (
     <>
-      {/* Backdrop */}
       <div className='fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm' onClick={onClose} />
 
-      {/* Drawer */}
       <aside className='fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900'>
         {/* Header */}
         <div className='flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-700'>
@@ -150,10 +86,9 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
 
         {/* Body */}
         <div className='flex-1 overflow-y-auto px-5 py-4'>
-          {/* ── Detail Tab ── */}
+          {/* ── Details tab ── */}
           {tab === 'detail' && (
             <div className='space-y-5'>
-              {/* Meta grid */}
               <div className='grid grid-cols-2 gap-3'>
                 {[
                   {
@@ -196,7 +131,6 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
                 ))}
               </div>
 
-              {/* Description */}
               {ticket.description && (
                 <div>
                   <p className='mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400'>
@@ -208,7 +142,6 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
                 </div>
               )}
 
-              {/* Update status */}
               {availableNextStatuses.length > 0 && (
                 <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-700'>
                   <p className='mb-3 text-sm font-semibold text-slate-800 dark:text-slate-200'>Update Status</p>
@@ -254,134 +187,11 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
             </div>
           )}
 
-          {/* ── Images Tab ── */}
-          {tab === 'images' && (
-            <div className='space-y-6'>
-              {/* Upload control */}
-              <div className='rounded-xl border border-dashed border-slate-300 p-4 dark:border-slate-700'>
-                <p className='mb-3 text-sm font-semibold text-slate-800 dark:text-slate-200'>Upload Images</p>
-
-                {uploadError && (
-                  <div className='mb-3 flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-900/20 dark:text-rose-400'>
-                    <FiAlertCircle className='h-3.5 w-3.5 shrink-0' />
-                    {uploadError}
-                  </div>
-                )}
-
-                <div className='flex items-center gap-3'>
-                  <div className='flex rounded-lg border border-slate-300 dark:border-slate-700'>
-                    {(['before', 'after'] as const).map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => setUploadType(type)}
-                        className={cn(
-                          'px-4 py-2 text-xs font-semibold capitalize transition-colors first:rounded-l-lg last:rounded-r-lg',
-                          uploadType === type
-                            ? 'bg-blue-600 text-white'
-                            : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800'
-                        )}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-
-                  <input
-                    ref={fileRef}
-                    type='file'
-                    accept='image/*'
-                    multiple
-                    className='hidden'
-                    onChange={(e) => handleUpload(e.target.files)}
-                  />
-                  <button
-                    onClick={() => fileRef.current?.click()}
-                    disabled={uploading}
-                    className='flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60'
-                  >
-                    {uploading ? (
-                      <>Uploading…</>
-                    ) : (
-                      <>
-                        <FiUpload className='h-3.5 w-3.5' /> Upload {uploadType}
-                      </>
-                    )}
-                  </button>
-                </div>
-                <p className='mt-2 text-xs text-slate-400'>Max 10 MB per file. Multiple files allowed.</p>
-              </div>
-
-              {/* Image grids */}
-              {imagesLoading ? (
-                <div className='grid grid-cols-2 gap-3'>
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className='aspect-square animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800' />
-                  ))}
-                </div>
-              ) : (
-                <>
-                  <ImageSection title='Before' icon={FiCamera} images={beforeImages} onDelete={handleDeleteImage} />
-                  <ImageSection title='After' icon={FiImage} images={afterImages} onDelete={handleDeleteImage} />
-                </>
-              )}
-            </div>
-          )}
+          {/* ── Images tab — replaced with shared component ── */}
+          {tab === 'images' && <TicketImageUpload ticketId={ticket.id} />}
         </div>
       </aside>
     </>
-  )
-}
-
-// ─── Image section ────────────────────────────────────────────────────────────
-
-type ImageSectionProps = {
-  title: string
-  icon: React.ComponentType<{ className?: string }>
-  images: TicketImage[]
-  onDelete: (id: string) => void
-}
-
-function ImageSection({ title, icon: Icon, images, onDelete }: ImageSectionProps) {
-  return (
-    <div>
-      <div className='mb-2 flex items-center gap-2'>
-        <Icon className='h-4 w-4 text-slate-500' />
-        <p className='text-sm font-semibold text-slate-700 dark:text-slate-300'>{title}</p>
-        <span className='rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400'>
-          {images.length}
-        </span>
-      </div>
-
-      {images.length === 0 ? (
-        <p className='rounded-lg border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400 dark:border-slate-700'>
-          No {title.toLowerCase()} images yet
-        </p>
-      ) : (
-        <div className='grid grid-cols-2 gap-3'>
-          {images.map((img) => (
-            <div
-              key={img.id}
-              className='group relative aspect-square overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700'
-            >
-              <img
-                src={img.imageUrl}
-                alt={`${title} image`}
-                className='h-full w-full object-cover transition-transform group-hover:scale-105'
-              />
-              <button
-                onClick={() => onDelete(img.id)}
-                className='absolute right-1.5 top-1.5 rounded-full bg-slate-900/70 p-1 text-white opacity-0 transition-opacity hover:bg-rose-600 group-hover:opacity-100'
-              >
-                <FiX className='h-3 w-3' />
-              </button>
-              <p className='absolute bottom-0 left-0 right-0 bg-slate-900/50 px-2 py-1 text-center text-xs text-white'>
-                {formatDate(img.uploadedAt)}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
   )
 }
 
@@ -434,7 +244,6 @@ export default function TechnicianMyTicketsPage() {
         breadcrumbs={[{ label: 'Technician' }, { label: 'My Tickets' }]}
       />
 
-      {/* Filters */}
       <div className='mb-4 flex flex-wrap gap-3'>
         <input
           value={search}
@@ -542,7 +351,6 @@ export default function TechnicianMyTicketsPage() {
         )}
       </section>
 
-      {/* Detail Drawer */}
       {selected && (
         <TicketDrawer
           ticket={selected}
