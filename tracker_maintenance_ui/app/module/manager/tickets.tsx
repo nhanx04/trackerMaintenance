@@ -388,6 +388,16 @@ export default function ManagerTicketsPage() {
     }
   }
 
+  async function handleCancel(ticket: Ticket) {
+    if (!confirm(`Cancel ticket "${ticket.title}"?`)) return
+    try {
+      await ticketApi.cancel(ticket.id)
+      fetchTickets(page)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to cancel')
+    }
+  }
+
   const counts = {
     PENDING: tickets.filter((t) => t.status === 'PENDING').length,
     IN_PROGRESS: tickets.filter((t) => t.status === 'IN_PROGRESS').length,
@@ -521,7 +531,14 @@ export default function ManagerTicketsPage() {
         )}
 
         {!loading && tickets.length > 0 && (
-          <TicketTable tickets={tickets} showAssignee onView={(ticket) => setSelected(ticket)} actionLabel='Manage' />
+          <TicketTable
+            tickets={tickets}
+            showAssignee
+            onView={(ticket) => setSelected(ticket)}
+            onDelete={(t) => setToDelete(t)}
+            onCancel={handleCancel}
+            actionLabel='Manage'
+          />
         )}
 
         {totalPages > 1 && (

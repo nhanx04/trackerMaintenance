@@ -27,11 +27,20 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {})
     }
   })
+
   if (!res.ok) {
     const text = await res.text()
     throw new Error(text || `Request failed: ${res.status}`)
   }
-  const data = (await res.json()) as ApiResponse<T>
+
+  if (res.status === 204) {
+    return undefined as T
+  }
+
+  const text = await res.text()
+  if (!text) return undefined as T
+
+  const data = JSON.parse(text) as ApiResponse<T>
   return data.result
 }
 

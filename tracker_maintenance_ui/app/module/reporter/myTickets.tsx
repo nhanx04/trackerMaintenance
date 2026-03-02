@@ -55,16 +55,6 @@ export default function ReporterMyTicketsPage() {
     fetchTickets(0)
   }
 
-  async function handleCancel(ticket: Ticket) {
-    if (!confirm(`Cancel ticket "${ticket.title}"?`)) return
-    try {
-      await ticketApi.cancel(ticket.id)
-      fetchTickets(page)
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to cancel')
-    }
-  }
-
   const totalShown = Math.min((page + 1) * PAGE_SIZE, tickets.length + page * PAGE_SIZE)
 
   return (
@@ -158,7 +148,7 @@ export default function ReporterMyTicketsPage() {
           </div>
         )}
 
-        {!loading && tickets.length > 0 && <TicketTable tickets={tickets} onCancel={handleCancel} />}
+        {!loading && tickets.length > 0 && <TicketTable tickets={tickets} />}
 
         {/* Pagination */}
         {totalPages > 1 && (

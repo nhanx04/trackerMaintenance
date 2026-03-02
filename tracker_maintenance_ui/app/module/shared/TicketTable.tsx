@@ -7,12 +7,11 @@ type ActionStyle = 'blue' | 'emerald' | 'rose'
 type TicketTableProps = {
   tickets: Ticket[]
   showAssignee?: boolean
-  /** Primary action button — omit to hide */
   onView?: (ticket: Ticket) => void
   actionLabel?: string
   actionStyle?: ActionStyle
-  /** Secondary cancel — only shown on PENDING tickets */
   onCancel?: (ticket: Ticket) => void
+  onDelete?: (ticket: Ticket) => void // 👈 thêm mới
 }
 
 const actionStyles: Record<ActionStyle, string> = {
@@ -27,7 +26,8 @@ export function TicketTable({
   onView,
   actionLabel = 'View',
   actionStyle = 'blue',
-  onCancel
+  onCancel,
+  onDelete // 👈 thêm mới
 }: TicketTableProps) {
   return (
     <div className='overflow-x-auto'>
@@ -40,7 +40,9 @@ export function TicketTable({
             <th className='pb-3 pr-4 font-semibold text-slate-600 dark:text-slate-400'>Device ID</th>
             {showAssignee && <th className='pb-3 pr-4 font-semibold text-slate-600 dark:text-slate-400'>Assignee</th>}
             <th className='pb-3 pr-4 font-semibold text-slate-600 dark:text-slate-400'>Created</th>
-            {(onView || onCancel) && <th className='pb-3 font-semibold text-slate-600 dark:text-slate-400'>Actions</th>}
+            {(onView || onCancel || onDelete) && ( // 👈 thêm onDelete
+              <th className='pb-3 pr-4 text-center font-semibold text-slate-600 dark:text-slate-400'>Actions</th>
+            )}
           </tr>
         </thead>
         <tbody className='divide-y divide-slate-100 dark:divide-slate-800'>
@@ -87,7 +89,7 @@ export function TicketTable({
 
               <td className='py-3 pr-4 text-xs text-slate-500 dark:text-slate-400'>{formatDate(ticket.createdAt)}</td>
 
-              {(onView || onCancel) && (
+              {(onView || onCancel || onDelete) && ( // 👈 thêm onDelete
                 <td className='py-3'>
                   <div className='flex items-center gap-2'>
                     {onView && (
@@ -107,6 +109,15 @@ export function TicketTable({
                         className='rounded-md px-2.5 py-1 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'
                       >
                         Cancel
+                      </button>
+                    )}
+                    {/* 👇 nút Delete mới */}
+                    {onDelete && (
+                      <button
+                        onClick={() => onDelete(ticket)}
+                        className='rounded-md px-2.5 py-1 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:text-rose-500 dark:hover:bg-rose-500/20'
+                      >
+                        Delete
                       </button>
                     )}
                   </div>
