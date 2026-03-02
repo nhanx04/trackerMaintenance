@@ -106,7 +106,7 @@ export function TicketTable({
                     {onCancel && ticket.status === 'PENDING' && (
                       <button
                         onClick={() => onCancel(ticket)}
-                        className='rounded-md px-2.5 py-1 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'
+                        className='rounded-md px-2.5 py-1 text-xs font-medium text-amber-600 transition-colors hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-500/10'
                       >
                         Cancel
                       </button>
