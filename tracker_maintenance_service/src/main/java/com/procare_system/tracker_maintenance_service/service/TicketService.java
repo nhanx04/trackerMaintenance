@@ -10,6 +10,8 @@ import com.procare_system.tracker_maintenance_service.exception.AppException;
 import com.procare_system.tracker_maintenance_service.exception.ErrorCode;
 import com.procare_system.tracker_maintenance_service.mapper.TicketMapper;
 import com.procare_system.tracker_maintenance_service.repository.TicketRepository;
+import com.procare_system.tracker_maintenance_service.repository.UserRepository;
+
 import jakarta.persistence.criteria.Predicate;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -33,6 +36,7 @@ public class TicketService {
 
     TicketRepository ticketRepository;
     TicketMapper ticketMapper;
+    UserRepository userRepository;
 
     //  Helper: lấy thông tin user
     private Authentication currentAuth() {
@@ -40,7 +44,23 @@ public class TicketService {
     }
 
     private String currentUserId() {
-        return currentAuth().getName();
+
+        Authentication authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        if (authentication instanceof JwtAuthenticationToken jwtAuth) {
+
+            // Lấy username từ JWT (sub)
+            String username = jwtAuth.getName();
+
+            // Tìm user trong DB
+            return userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found: " + username))
+                    .getId();
+        }
+
+        throw new RuntimeException("Unauthenticated");
     }
 
     private boolean hasRole(String role) {
