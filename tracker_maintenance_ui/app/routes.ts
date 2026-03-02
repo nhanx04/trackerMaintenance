@@ -9,6 +9,7 @@ export default [
   route('manager/tickets', 'module/manager/tickets.tsx'),
   route('manager/history', 'module/manager/history.tsx'),
   route('manager/reports', 'module/manager/reports.tsx'),
+  route('manager/create-ticket', 'module/manager/createTicket.tsx'),
   route('admin/dashboard', 'module/admin/dashboard.tsx'),
   route('admin/users', 'module/admin/users.tsx'),
   route('admin/users/create', 'module/admin/createUser.tsx'),

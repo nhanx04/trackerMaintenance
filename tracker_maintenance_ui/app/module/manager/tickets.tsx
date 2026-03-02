@@ -27,16 +27,19 @@ type ConfirmDeleteProps = {
 function ConfirmDelete({ ticket, onConfirm, onCancel, loading }: ConfirmDeleteProps) {
   return (
     <div className='fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm'>
-      <div className='w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900'>
-        <div className='mb-1 flex h-11 w-11 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-500/20'>
+      <div className='w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-2xl dark:border-slate-700 dark:bg-slate-900'>
+        {' '}
+        <div className='mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-500/20'>
           <FiTrash2 className='h-5 w-5 text-rose-600 dark:text-rose-400' />
         </div>
         <h3 className='mt-3 text-base font-semibold text-slate-900 dark:text-white'>Delete Ticket?</h3>
-        <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>
+        <p className='mt-1 text-sm text-slate-500 dark:text-slate-400 text-center'>
+          {' '}
           "<span className='font-medium text-slate-700 dark:text-slate-300'>{ticket.title}</span>" will be permanently
           deleted. This cannot be undone.
         </p>
-        <div className='mt-5 flex justify-end gap-3'>
+        <div className='mt-6 flex justify-center gap-4'>
+          {' '}
           <button
             onClick={onCancel}
             className='rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
@@ -49,6 +52,49 @@ function ConfirmDelete({ ticket, onConfirm, onCancel, loading }: ConfirmDeletePr
             className='rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60'
           >
             {loading ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+type ConfirmCancelProps = {
+  ticket: Ticket
+  onConfirm: () => void
+  onClose: () => void
+  loading: boolean
+}
+
+function ConfirmCancel({ ticket, onConfirm, onClose, loading }: ConfirmCancelProps) {
+  return (
+    <div className='fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm'>
+      <div className='w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-2xl dark:border-slate-700 dark:bg-slate-900'>
+        {' '}
+        <div className='mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/20'>
+          {' '}
+          <FiAlertCircle className='h-5 w-5 text-amber-600 dark:text-amber-400' />
+        </div>
+        <h3 className='mt-3 text-base font-semibold text-slate-900 dark:text-white'>Cancel Ticket?</h3>
+        <p className='mt-1 text-sm text-slate-500 dark:text-slate-400 text-center'>
+          {' '}
+          Ticket "<span className='font-medium text-slate-700 dark:text-slate-300'>{ticket.title}</span>" will be marked
+          as cancelled.
+        </p>
+        <div className='mt-6 flex justify-center gap-4'>
+          {' '}
+          <button
+            onClick={onClose}
+            className='rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
+          >
+            Close
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className='rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60'
+          >
+            {loading ? 'Cancelling…' : 'Confirm'}
           </button>
         </div>
       </div>
@@ -340,6 +386,8 @@ export default function ManagerTicketsPage() {
   const [selected, setSelected] = useState<Ticket | null>(null)
   const [toDelete, setToDelete] = useState<Ticket | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [toCancel, setToCancel] = useState<Ticket | null>(null)
+  const [cancelLoading, setCancelLoading] = useState(false)
 
   useEffect(() => {
     getTechnicians(0, 100)
@@ -388,13 +436,21 @@ export default function ManagerTicketsPage() {
     }
   }
 
-  async function handleCancel(ticket: Ticket) {
-    if (!confirm(`Cancel ticket "${ticket.title}"?`)) return
+  function handleCancel(ticket: Ticket) {
+    setToCancel(ticket)
+  }
+
+  async function confirmCancel() {
+    if (!toCancel) return
+    setCancelLoading(true)
     try {
-      await ticketApi.cancel(ticket.id)
+      await ticketApi.cancel(toCancel.id)
+      setToCancel(null)
       fetchTickets(page)
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Failed to cancel')
+    } finally {
+      setCancelLoading(false)
     }
   }
 
@@ -416,7 +472,7 @@ export default function ManagerTicketsPage() {
         breadcrumbs={[{ label: 'Manager' }, { label: 'Tickets' }]}
         action={
           <Link
-            to='/reporter/create-ticket'
+            to='/manager/create-ticket'
             className='inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700'
           >
             <FiPlus className='h-4 w-4' />
@@ -602,6 +658,14 @@ export default function ManagerTicketsPage() {
           onConfirm={handleDelete}
           onCancel={() => setToDelete(null)}
           loading={deleteLoading}
+        />
+      )}
+      {toCancel && (
+        <ConfirmCancel
+          ticket={toCancel}
+          onConfirm={confirmCancel}
+          onClose={() => setToCancel(null)}
+          loading={cancelLoading}
         />
       )}
     </AppLayout>
