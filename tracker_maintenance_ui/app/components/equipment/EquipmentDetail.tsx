@@ -43,9 +43,9 @@ export function EquipmentDetail({ equipment, onEdit, onDelete }: EquipmentDetail
       </div>
 
       <section className='grid gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:grid-cols-[1.2fr_1fr]'>
-        <div className='h-80 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800'>
+        <div className='h-80 rounded-2xl bg-slate-100 p-3 dark:bg-slate-800'>
           {equipment.imageUrl ? (
-            <img src={equipment.imageUrl} alt={equipment.name} className='h-full w-full object-cover' />
+            <img src={equipment.imageUrl} alt={equipment.name} className='h-full w-full rounded-xl object-contain' />
           ) : (
             <div className='flex h-full items-center justify-center text-slate-400'>
               <FiImage className='h-12 w-12' />

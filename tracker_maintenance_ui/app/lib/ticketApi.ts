@@ -1,5 +1,4 @@
-import { API_BASE_URL } from '@/lib/api'
-import { getAuth } from '@/lib/auth'
+import { authFetch } from '@/lib/api'
 import type {
   Ticket,
   TicketPage,
@@ -10,20 +9,13 @@ import type {
   UpdateTicketRequest
 } from '@/types/ticket'
 
-function token(): string {
-  const auth = getAuth()
-  if (!auth?.token) throw new Error('Unauthenticated')
-  return auth.token
-}
-
 type ApiResponse<T> = { code?: number; message?: string; result: T }
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await authFetch(path, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token()}`,
       ...(init?.headers ?? {})
     }
   })
@@ -45,9 +37,8 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function reqForm<T>(path: string, form: FormData): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await authFetch(path, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token()}` },
     body: form
   })
   if (!res.ok) {
