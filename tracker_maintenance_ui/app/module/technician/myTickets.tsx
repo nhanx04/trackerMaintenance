@@ -323,6 +323,7 @@ export default function TechnicianMyTicketsPage() {
             showAssignee={false}
             onView={(ticket) => setSelected(ticket)}
             actionLabel='View Details'
+            centerViewOnly
           />
         )}
 

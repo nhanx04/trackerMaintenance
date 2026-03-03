@@ -14,6 +14,7 @@ type TicketTableProps = {
   actionStyle?: ActionStyle
   onCancel?: (ticket: Ticket) => void
   onDelete?: (ticket: Ticket) => void
+  centerViewOnly?: boolean
 }
 
 const actionStyles: Record<ActionStyle, string> = {
@@ -31,7 +32,8 @@ export function TicketTable({
   actionLabel = 'View',
   actionStyle = 'blue',
   onCancel,
-  onDelete
+  onDelete,
+  centerViewOnly = false
 }: TicketTableProps) {
   return (
     <div className='overflow-x-auto'>
@@ -119,6 +121,7 @@ export function TicketTable({
                           onClick={() => onView(ticket)}
                           className={cn(
                             'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                            centerViewOnly && 'mx-auto block',
                             actionStyles[actionStyle]
                           )}
                         >
