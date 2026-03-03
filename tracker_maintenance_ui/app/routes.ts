@@ -6,6 +6,7 @@ export default [
   route('login', 'module/auth/login.tsx'),
   route('manager/dashboard', 'module/manager/dashboard.tsx'),
   route('manager/equipment', 'module/manager/equipment.tsx'),
+  route('manager/equipment/:id', 'module/manager/equipmentDetail.tsx'),
   route('manager/tickets', 'module/manager/tickets.tsx'),
   route('manager/history', 'module/manager/history.tsx'),
   route('manager/reports', 'module/manager/reports.tsx'),

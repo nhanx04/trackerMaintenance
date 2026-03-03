@@ -7,9 +7,11 @@ import { PageHeader } from '@/components/ui-custom/PageHeader'
 import { TicketTable } from '@/module/shared/TicketTable'
 import { TicketImageUpload } from '@/module/shared/TicketImageUpload'
 import { ticketApi, getTechnicians } from '@/lib/ticketApi'
+import { equipmentApi } from '@/lib/equipmentApi'
 import { cn } from '@/lib/cn'
 import { formatDate, priorityLabel, priorityStyle, statusLabel, statusStyle } from '@/lib/ticketUtils'
 import type { TechnicianUser } from '@/lib/ticketApi'
+import type { Equipment } from '@/types/equipment'
 import type { Ticket, TicketFilter, TicketPriority, TicketStatus, UpdateTicketRequest } from '@/types/ticket'
 
 const PAGE_SIZE = 10
@@ -383,6 +385,7 @@ export default function ManagerTicketsPage() {
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | ''>('')
   const [error, setError] = useState<string | null>(null)
   const [technicians, setTechnicians] = useState<TechnicianUser[]>([])
+  const [equipments, setEquipments] = useState<Equipment[]>([])
   const [selected, setSelected] = useState<Ticket | null>(null)
   const [toDelete, setToDelete] = useState<Ticket | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -398,6 +401,13 @@ export default function ManagerTicketsPage() {
     getTechnicians(0, 100)
       .then((res) => setTechnicians(res.content))
       .catch((e) => console.error('Load technicians failed', e))
+  }, [])
+
+  useEffect(() => {
+    equipmentApi
+      .getAll({ page: 0, size: 200 })
+      .then((res) => setEquipments(res.content))
+      .catch((e) => console.error('Load equipments failed', e))
   }, [])
 
   async function fetchTickets(p = page) {
@@ -424,6 +434,7 @@ export default function ManagerTicketsPage() {
 
   useEffect(() => {
     fetchTickets(page)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, statusFilter, priorityFilter])
 
   async function handleDelete() {
@@ -521,6 +532,17 @@ export default function ManagerTicketsPage() {
     CANCELLED: tickets.filter((t) => t.status === 'CANCELLED').length
   }
 
+  const technicianLabelById = Object.fromEntries(
+    technicians.map((tech) => [
+      tech.id,
+      tech.firstName ? `${tech.firstName} ${tech.lastName ?? ''}`.trim() : tech.username
+    ])
+  )
+
+  const deviceLabelById = Object.fromEntries(
+    equipments.map((device) => [String(device.id), `${device.code} • ${device.name}`])
+  )
+
   const from = page * PAGE_SIZE + 1
   const to = Math.min((page + 1) * PAGE_SIZE, totalElements)
 
@@ -528,7 +550,6 @@ export default function ManagerTicketsPage() {
     <AppLayout>
       <PageHeader
         title='Tickets'
-        subtitle='View and manage all maintenance tickets.'
         breadcrumbs={[{ label: 'Manager' }, { label: 'Tickets' }]}
         action={
           <Link
@@ -541,9 +562,15 @@ export default function ManagerTicketsPage() {
         }
       />
 
-      {/* Summary chips */}
-      <div className='mb-4 flex flex-wrap gap-2'>
-        {(Object.entries(counts) as [TicketStatus, number][]).map(([s, count]) => (
+      <div className='mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+        {(
+          [
+            ['PENDING', 'New', 'text-blue-600'],
+            ['IN_PROGRESS', 'In Progress', 'text-amber-600'],
+            ['DONE', 'Completed', 'text-emerald-600'],
+            ['CANCELLED', 'Cannot Resolve', 'text-rose-600']
+          ] as [TicketStatus, string, string][]
+        ).map(([s, label, accent]) => (
           <button
             key={s}
             onClick={() => {
@@ -551,21 +578,14 @@ export default function ManagerTicketsPage() {
               setPage(0)
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all',
+              'rounded-xl border bg-white p-4 text-left shadow-sm transition hover:shadow dark:bg-slate-900',
               statusFilter === s
-                ? cn('border-transparent ring-2', statusStyle[s])
-                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                ? 'border-blue-300 ring-2 ring-blue-200 dark:border-blue-500 dark:ring-blue-500/30'
+                : 'border-slate-200 dark:border-slate-800'
             )}
           >
-            <span
-              className={cn(
-                'inline-flex rounded-full px-1.5 py-0.5 text-xs font-bold',
-                statusFilter === s ? '' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
-              )}
-            >
-              {count}
-            </span>
-            {statusLabel[s]}
+            <p className='text-xs text-slate-500 dark:text-slate-400'>{label}</p>
+            <p className={cn('mt-1 text-2xl font-semibold', accent)}>{counts[s]}</p>
           </button>
         ))}
       </div>
@@ -664,6 +684,8 @@ export default function ManagerTicketsPage() {
           <TicketTable
             tickets={tickets}
             showAssignee
+            assigneeLabelById={technicianLabelById}
+            deviceLabelById={deviceLabelById}
             onView={(ticket) => setSelected(ticket)}
             onDelete={(t) => setToDelete(t)}
             onCancel={handleCancel}

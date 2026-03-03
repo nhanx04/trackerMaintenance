@@ -10,7 +10,7 @@ export const statusLabel: Record<BackendStatus, string> = {
 
 // Map backend status → Tailwind badge style
 export const statusStyle: Record<BackendStatus, string> = {
-  PENDING: 'bg-slate-100 text-slate-700 ring-slate-300 dark:bg-slate-500/20 dark:text-slate-200',
+  PENDING: 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/20 dark:text-blue-300',
   IN_PROGRESS: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/20 dark:text-amber-300',
   DONE: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300',
   CANCELLED: 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/20 dark:text-rose-300'
