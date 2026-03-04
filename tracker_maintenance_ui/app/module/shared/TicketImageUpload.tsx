@@ -396,7 +396,7 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
         </div>
       ) : (
         <div className='space-y-5'>
-          {beforeImages.length > 0 && (
+          {allowedTypes.includes('before') && (
             <ImageGallery
               title='Before'
               icon={FiCamera}
@@ -406,7 +406,8 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
               allowDelete={!isTechnician && !isReporter}
             />
           )}
-          {afterImages.length > 0 && (
+
+          {allowedTypes.includes('after') && (
             <ImageGallery
               title='After'
               icon={FiImage}
