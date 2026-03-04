@@ -396,27 +396,23 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
         </div>
       ) : (
         <div className='space-y-5'>
-          {allowedTypes.includes('before') && (
-            <ImageGallery
-              title='Before'
-              icon={FiCamera}
-              images={beforeImages}
-              onDelete={deleteImage}
-              onZoom={setLightbox}
-              allowDelete={!isTechnician && !isReporter}
-            />
-          )}
+          <ImageGallery
+            title='Before'
+            icon={FiCamera}
+            images={beforeImages}
+            onDelete={deleteImage}
+            onZoom={setLightbox}
+            allowDelete={!isTechnician && !isReporter}
+          />
 
-          {allowedTypes.includes('after') && (
-            <ImageGallery
-              title='After'
-              icon={FiImage}
-              images={afterImages}
-              onDelete={deleteImage}
-              onZoom={setLightbox}
-              allowDelete={!isReporter}
-            />
-          )}
+          <ImageGallery
+            title='After'
+            icon={FiImage}
+            images={afterImages}
+            onDelete={deleteImage}
+            onZoom={setLightbox}
+            allowDelete={!isReporter}
+          />
         </div>
       )}
       {imageToDelete && (
