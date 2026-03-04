@@ -232,9 +232,11 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
   return (
     <div className='space-y-5'>
       {/* Type toggle — only when both types allowed */}
-      {allowedTypes.length > 1 && !isReporter && (
+      {/* Upload type display */}
+      {allowedTypes.length > 1 ? (
         <div className='flex items-center gap-2'>
           <span className='text-xs font-medium text-slate-500 dark:text-slate-400'>Upload as:</span>
+
           <div className='flex overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700'>
             {allowedTypes.map((t) => (
               <button
@@ -253,10 +255,18 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
             ))}
           </div>
         </div>
+      ) : (
+        <div className='flex items-center gap-2'>
+          <span className='text-xs font-medium text-slate-500 dark:text-slate-400'>Upload as:</span>
+
+          <span className='rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold capitalize text-white'>
+            {allowedTypes[0]}
+          </span>
+        </div>
       )}
 
       {/* Drop zone */}
-      {!isReporter && (
+      {allowedTypes.length > 0 && (
         <div
           onDragOver={(e) => {
             e.preventDefault()
@@ -386,7 +396,7 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
         </div>
       ) : (
         <div className='space-y-5'>
-          {allowedTypes.includes('before') && (
+          {beforeImages.length > 0 && (
             <ImageGallery
               title='Before'
               icon={FiCamera}
@@ -396,7 +406,7 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
               allowDelete={!isTechnician && !isReporter}
             />
           )}
-          {allowedTypes.includes('after') && (
+          {afterImages.length > 0 && (
             <ImageGallery
               title='After'
               icon={FiImage}

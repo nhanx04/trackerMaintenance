@@ -16,6 +16,7 @@ import { TicketTable } from '@/module/shared/TicketTable'
 import { ticketApi } from '@/lib/ticketApi'
 import { getAuth } from '@/lib/auth'
 import { TicketImageUpload } from '../shared/TicketImageUpload'
+import { TicketImageViewer } from '../shared/TicketImageViewer'
 
 const NEXT_STATUSES: Partial<Record<TicketStatus, TicketStatus[]>> = {
   PENDING: ['IN_PROGRESS'],
@@ -156,7 +157,7 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
           )}
 
           {/* ── Images tab — replaced with shared component ── */}
-          {tab === 'images' && <TicketImageUpload ticketId={ticket.id} />}
+          {tab === 'images' && <TicketImageViewer ticketId={ticket.id} />}
         </div>
       </aside>
     </>

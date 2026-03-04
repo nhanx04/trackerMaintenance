@@ -188,7 +188,7 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
           )}
 
           {/* ── Images tab — replaced with shared component ── */}
-          {tab === 'images' && <TicketImageUpload ticketId={ticket.id} />}
+          {tab === 'images' && <TicketImageUpload ticketId={ticket.id} allowedTypes={['after']} />}
         </div>
       </aside>
     </>
