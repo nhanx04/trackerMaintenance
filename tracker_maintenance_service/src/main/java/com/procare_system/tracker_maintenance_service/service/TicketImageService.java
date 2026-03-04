@@ -114,7 +114,7 @@ public class TicketImageService {
 
     private void checkUploadPermission(Ticket ticket, ImageType type) {
         Authentication auth = currentAuth();
-        String uid = auth.getName();
+        String uid = currentUserId();
 
         boolean isAdminOrManager = hasRole(auth, "ADMIN") || hasRole(auth, "MANAGER");
         if (isAdminOrManager) return;

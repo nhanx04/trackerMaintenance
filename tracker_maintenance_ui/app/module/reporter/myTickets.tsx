@@ -1,16 +1,167 @@
 import { useEffect, useState } from 'react'
 import { FiPlus } from 'react-icons/fi'
 import { Link } from 'react-router'
+import { FiAlertCircle, FiChevronDown, FiX } from 'react-icons/fi'
+
+import { cn } from '@/lib/cn'
+import { formatDate, priorityLabel, priorityStyle, statusLabel, statusStyle } from '@/lib/ticketUtils'
+
+import type { Ticket, TicketFilter, TicketPriority, TicketStatus, UpdateTicketRequest } from '@/types/ticket'
 
 import { AppLayout } from '@/layouts/AppLayout'
 import { PageHeader } from '@/components/ui-custom/PageHeader'
 import { DataTableWrapper } from '@/components/ui-custom/DataTableWrapper'
 import { TicketTable } from '@/module/shared/TicketTable'
+
 import { ticketApi } from '@/lib/ticketApi'
 import { getAuth } from '@/lib/auth'
-import type { Ticket, TicketFilter, TicketPriority, TicketStatus } from '@/types/ticket'
+import { TicketImageUpload } from '../shared/TicketImageUpload'
 
+const NEXT_STATUSES: Partial<Record<TicketStatus, TicketStatus[]>> = {
+  PENDING: ['IN_PROGRESS'],
+  IN_PROGRESS: ['DONE']
+}
 const PAGE_SIZE = 10
+
+// ─── Drawer ───────────────────────────────────────────────────────────────────
+
+type DrawerProps = {
+  ticket: Ticket
+  onClose: () => void
+  onUpdated: () => void
+}
+
+function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
+  const [tab, setTab] = useState<'detail' | 'images'>('detail')
+
+  const [nextStatus, setNextStatus] = useState<TicketStatus | ''>('')
+  const [statusLoading, setStatusLoading] = useState(false)
+  const [statusError, setStatusError] = useState<string | null>(null)
+
+  const availableNextStatuses = NEXT_STATUSES[ticket.status] ?? []
+
+  async function handleUpdateStatus() {
+    if (!nextStatus) return
+    setStatusLoading(true)
+    setStatusError(null)
+    try {
+      await ticketApi.update(ticket.id, { status: nextStatus } as UpdateTicketRequest)
+      onUpdated()
+      onClose()
+    } catch (e) {
+      setStatusError(e instanceof Error ? e.message : 'Failed to update status')
+    } finally {
+      setStatusLoading(false)
+    }
+  }
+
+  return (
+    <>
+      <div className='fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm' onClick={onClose} />
+
+      <aside className='fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900'>
+        {/* Header */}
+        <div className='flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-700'>
+          <div className='min-w-0'>
+            <p className='text-xs font-medium text-slate-500 dark:text-slate-400'>Ticket Detail</p>
+            <h2 className='mt-0.5 truncate text-base font-semibold text-slate-900 dark:text-white'>{ticket.title}</h2>
+          </div>
+          <button onClick={onClose} className='shrink-0 rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800'>
+            <FiX className='h-5 w-5' />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className='flex border-b border-slate-200 dark:border-slate-700'>
+          {(['detail', 'images'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn(
+                'flex-1 py-2.5 text-sm font-medium capitalize transition-colors',
+                tab === t
+                  ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+              )}
+            >
+              {t === 'images' ? 'Before / After' : 'Details'}
+            </button>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div className='flex-1 overflow-y-auto px-5 py-4'>
+          {/* ── Details tab ── */}
+          {tab === 'detail' && (
+            <div className='space-y-5'>
+              <div className='grid grid-cols-2 gap-3'>
+                {[
+                  {
+                    label: 'Status',
+                    value: (
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
+                          statusStyle[ticket.status]
+                        )}
+                      >
+                        {statusLabel[ticket.status]}
+                      </span>
+                    )
+                  },
+                  {
+                    label: 'Priority',
+                    value: (
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold',
+                          priorityStyle[ticket.priority]
+                        )}
+                      >
+                        {priorityLabel[ticket.priority]}
+                      </span>
+                    )
+                  },
+                  { label: 'Device ID', value: <span className='font-mono text-xs'>{ticket.deviceId}</span> },
+                  { label: 'Created', value: formatDate(ticket.createdAt) },
+                  { label: 'Scheduled', value: formatDate(ticket.scheduledDate) },
+                  { label: 'Updated', value: formatDate(ticket.updatedAt) }
+                ].map(({ label, value }) => (
+                  <div key={label} className='rounded-lg bg-slate-50 p-3 dark:bg-slate-800/70'>
+                    <p className='text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400'>
+                      {label}
+                    </p>
+                    <div className='mt-1 text-sm font-semibold text-slate-800 dark:text-slate-200'>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {ticket.description && (
+                <div>
+                  <p className='mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400'>
+                    Description
+                  </p>
+                  <p className='rounded-lg bg-slate-50 p-3 text-sm leading-relaxed text-slate-700 dark:bg-slate-800/70 dark:text-slate-300'>
+                    {ticket.description}
+                  </p>
+                </div>
+              )}
+
+              {availableNextStatuses.length === 0 && (
+                <p className='rounded-lg bg-slate-50 px-4 py-3 text-center text-sm text-slate-500 dark:bg-slate-800/70 dark:text-slate-400'>
+                  This ticket is already <strong>{statusLabel[ticket.status]}</strong> and cannot be updated further.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ── Images tab — replaced with shared component ── */}
+          {tab === 'images' && <TicketImageUpload ticketId={ticket.id} />}
+        </div>
+      </aside>
+    </>
+  )
+}
 
 export default function ReporterMyTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([])
@@ -21,6 +172,7 @@ export default function ReporterMyTicketsPage() {
   const [status, setStatus] = useState<TicketStatus | ''>('')
   const [priority, setPriority] = useState<TicketPriority | ''>('')
   const [error, setError] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Ticket | null>(null)
 
   const auth = getAuth()
 
@@ -148,7 +300,15 @@ export default function ReporterMyTicketsPage() {
           </div>
         )}
 
-        {!loading && tickets.length > 0 && <TicketTable tickets={tickets} />}
+        {!loading && tickets.length > 0 && (
+          <TicketTable
+            tickets={tickets}
+            showAssignee={false}
+            onView={(ticket) => setSelected(ticket)}
+            actionLabel='View Details'
+            centerViewOnly
+          />
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -175,6 +335,16 @@ export default function ReporterMyTicketsPage() {
           </div>
         )}
       </section>
+      {selected && (
+        <TicketDrawer
+          ticket={selected}
+          onClose={() => setSelected(null)}
+          onUpdated={() => {
+            setSelected(null)
+            fetchTickets(page)
+          }}
+        />
+      )}
     </AppLayout>
   )
 }

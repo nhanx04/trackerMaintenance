@@ -100,7 +100,7 @@ export default function AdminCreateTicketPage() {
       <AppLayout>
         <PageHeader
           title='Upload Images'
-          subtitle='Optionally attach before/after photos to your ticket.'
+          subtitle='Optionally attach before photos to your ticket.'
           breadcrumbs={[
             { label: 'Admin' },
             { label: 'My Tickets', href: '/admin/tickets' },
@@ -110,7 +110,7 @@ export default function AdminCreateTicketPage() {
         <div className='grid gap-6 lg:grid-cols-[2fr_1fr]'>
           <section className='rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900'>
             <div className='mb-5 flex items-center justify-between'>
-              <h3 className='text-base font-semibold text-slate-900 dark:text-white'>Before / After Photos</h3>
+              <h3 className='text-base font-semibold text-slate-900 dark:text-white'>Before Photos</h3>
               <span className='rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'>
                 ✓ Ticket created
               </span>

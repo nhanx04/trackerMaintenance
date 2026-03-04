@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { AppLayout } from '@/layouts/AppLayout'
@@ -6,6 +6,8 @@ import { PageHeader } from '@/components/ui-custom/PageHeader'
 import { InfoCard } from '@/components/ui-custom/InfoCard'
 import { TicketImageUpload } from '@/module/shared/TicketImageUpload'
 import { ticketApi } from '@/lib/ticketApi'
+import { equipmentApi } from '@/lib/equipmentApi'
+import type { Equipment } from '@/types/equipment'
 import type { TicketPriority } from '@/types/ticket'
 
 type FormErrors = {
@@ -36,8 +38,26 @@ export default function ReporterCreateTicketPage() {
   const [errors, setErrors] = useState<Partial<FormErrors>>({})
   const [loading, setLoading] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
-  // After successful create, store the new ticketId to show upload step
+  const [devices, setDevices] = useState<Equipment[]>([])
+  const [devicesLoading, setDevicesLoading] = useState(true)
+  const [deviceQuery, setDeviceQuery] = useState('')
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [createdTicketId, setCreatedTicketId] = useState<string | null>(null)
+
+  useEffect(() => {
+    equipmentApi
+      .getAll({ page: 0, size: 200 })
+      .then((res) => setDevices(res.content))
+      .finally(() => setDevicesLoading(false))
+  }, [])
+
+  const selectedDevice = useMemo(() => devices.find((d) => String(d.id) === form.deviceId), [devices, form.deviceId])
+
+  const filteredDevices = useMemo(() => {
+    const q = deviceQuery.trim().toLowerCase()
+    if (!q) return devices
+    return devices.filter((d) => `${d.code} ${d.name} ${d.location ?? ''}`.toLowerCase().includes(q))
+  }, [devices, deviceQuery])
 
   function set(field: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -80,7 +100,7 @@ export default function ReporterCreateTicketPage() {
       <AppLayout>
         <PageHeader
           title='Upload Images'
-          subtitle='Optionally attach before/after photos to your ticket.'
+          subtitle='Optionally attach before photos to your ticket.'
           breadcrumbs={[
             { label: 'Reporter' },
             { label: 'My Tickets', href: '/reporter/my-tickets' },
@@ -90,7 +110,7 @@ export default function ReporterCreateTicketPage() {
         <div className='grid gap-6 lg:grid-cols-[2fr_1fr]'>
           <section className='rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900'>
             <div className='mb-5 flex items-center justify-between'>
-              <h3 className='text-base font-semibold text-slate-900 dark:text-white'>Before / After Photos</h3>
+              <h3 className='text-base font-semibold text-slate-900 dark:text-white'>Befor Photos</h3>
               <span className='rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'>
                 ✓ Ticket created
               </span>
@@ -158,14 +178,20 @@ export default function ReporterCreateTicketPage() {
 
             <div>
               <label className='mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400'>
-                Device / Equipment ID <span className='text-rose-500'>*</span>
+                Device / Equipment <span className='text-rose-500'>*</span>
               </label>
-              <input
-                value={form.deviceId}
-                onChange={(e) => set('deviceId', e.target.value)}
-                placeholder='e.g. DEV-0042'
-                className={fieldCls(!!errors.deviceId)}
-              />
+              <button
+                type='button'
+                onClick={() => setPickerOpen(true)}
+                className={fieldCls(!!errors.deviceId) + ' text-left'}
+              >
+                {selectedDevice ? `${selectedDevice.code} • ${selectedDevice.name}` : 'Select equipment'}
+              </button>
+              {selectedDevice && (
+                <p className='mt-1 text-xs text-slate-500 dark:text-slate-400'>
+                  {selectedDevice.location ? `Location: ${selectedDevice.location}` : 'No location'}
+                </p>
+              )}
               {errors.deviceId && <p className='mt-1 text-xs text-rose-500'>{errors.deviceId}</p>}
             </div>
 
@@ -237,6 +263,75 @@ export default function ReporterCreateTicketPage() {
           ]}
         />
       </div>
+
+      {pickerOpen && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm'>
+          <div className='flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900'>
+            <div className='border-b border-slate-200 p-4 dark:border-slate-700'>
+              <h4 className='text-base font-semibold text-slate-900 dark:text-white'>Select Equipment</h4>
+              <input
+                value={deviceQuery}
+                onChange={(e) => setDeviceQuery(e.target.value)}
+                placeholder='Search by code, name, location...'
+                className='mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white'
+              />
+            </div>
+
+            <div className='grid flex-1 gap-3 overflow-y-auto p-4 sm:grid-cols-2 lg:grid-cols-3'>
+              {devicesLoading &&
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className='h-28 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800' />
+                ))}
+
+              {!devicesLoading && filteredDevices.length === 0 && (
+                <div className='col-span-full rounded-xl border border-dashed border-slate-300 py-10 text-center text-sm text-slate-500 dark:border-slate-700'>
+                  No equipment found
+                </div>
+              )}
+
+              {!devicesLoading &&
+                filteredDevices.map((d) => {
+                  const active = form.deviceId === String(d.id)
+                  return (
+                    <button
+                      key={d.id}
+                      type='button'
+                      onClick={() => set('deviceId', String(d.id))}
+                      className={[
+                        'rounded-xl border p-3 text-left transition',
+                        active
+                          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200 dark:bg-blue-500/10 dark:ring-blue-500/30'
+                          : 'border-slate-200 hover:border-slate-300 dark:border-slate-700'
+                      ].join(' ')}
+                    >
+                      <p className='text-xs text-slate-500 dark:text-slate-400'>{d.code}</p>
+                      <p className='mt-1 font-semibold text-slate-900 dark:text-white'>{d.name}</p>
+                      <p className='mt-1 text-xs text-slate-500 dark:text-slate-400'>{d.location || 'No location'}</p>
+                    </button>
+                  )
+                })}
+            </div>
+
+            <div className='flex justify-end gap-2 border-t border-slate-200 p-4 dark:border-slate-700'>
+              <button
+                type='button'
+                onClick={() => setPickerOpen(false)}
+                className='rounded-lg border border-slate-300 px-4 py-2 text-sm dark:border-slate-700'
+              >
+                Cancel
+              </button>
+              <button
+                type='button'
+                onClick={() => setPickerOpen(false)}
+                disabled={!form.deviceId}
+                className='rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60'
+              >
+                Confirm Selection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   )
 }

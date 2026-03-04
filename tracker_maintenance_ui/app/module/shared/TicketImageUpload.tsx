@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { FiCamera, FiImage, FiTrash2, FiUpload, FiX, FiZoomIn } from 'react-icons/fi'
-
+import { getAuth } from '@/lib/auth'
 import { ticketApi } from '@/lib/ticketApi'
 import { cn } from '@/lib/cn'
 import { formatDate } from '@/lib/ticketUtils'
 import type { TicketImage } from '@/types/ticket'
+import type { BackendRole } from '@/types/auth'
 
 export type UploadType = 'before' | 'after'
 
@@ -58,13 +59,17 @@ function ImageGallery({
   icon: Icon,
   images,
   onDelete,
-  onZoom
+  onZoom,
+  allowDelete = true,
+  isReporter = false
 }: {
   title: string
   icon: React.ComponentType<{ className?: string }>
   images: TicketImage[]
   onDelete: (id: string) => void
   onZoom: (url: string) => void
+  allowDelete?: boolean
+  isReporter?: boolean
 }) {
   return (
     <div>
@@ -98,12 +103,14 @@ function ImageGallery({
                 >
                   <FiZoomIn className='h-3.5 w-3.5' />
                 </button>
-                <button
-                  onClick={() => onDelete(img.id)}
-                  className='rounded-full bg-white/90 p-1.5 text-rose-600 hover:bg-white'
-                >
-                  <FiTrash2 className='h-3.5 w-3.5' />
-                </button>
+                {allowDelete && !isReporter && (
+                  <button
+                    onClick={() => onDelete(img.id)}
+                    className='rounded-full bg-white/90 p-1.5 text-rose-600 hover:bg-white'
+                  >
+                    <FiTrash2 className='h-3.5 w-3.5' />
+                  </button>
+                )}
               </div>
               <p className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/70 to-transparent px-2 py-1.5 text-center text-xs text-white'>
                 {formatDate(img.uploadedAt)}
@@ -118,6 +125,11 @@ function ImageGallery({
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
 
+export function hasRole(role: BackendRole) {
+  const auth = getAuth()
+  return auth?.roles?.includes(role)
+}
+
 export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after'] }: TicketImageUploadProps) {
   const [images, setImages] = useState<TicketImage[]>([])
   const [loadingImages, setLoading] = useState(true)
@@ -129,6 +141,8 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
   const [lightboxSrc, setLightbox] = useState<string | null>(null)
   const [imageToDelete, setImageToDelete] = useState<string | null>(null)
   const [deletingImage, setDeletingImage] = useState(false)
+  const isTechnician = hasRole('TECHNICIAN')
+  const isReporter = hasRole('REPORTER')
 
   async function fetchImages() {
     setLoading(true)
@@ -218,7 +232,7 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
   return (
     <div className='space-y-5'>
       {/* Type toggle — only when both types allowed */}
-      {allowedTypes.length > 1 && (
+      {allowedTypes.length > 1 && !isReporter && (
         <div className='flex items-center gap-2'>
           <span className='text-xs font-medium text-slate-500 dark:text-slate-400'>Upload as:</span>
           <div className='flex overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700'>
@@ -242,69 +256,71 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
       )}
 
       {/* Drop zone */}
-      <div
-        onDragOver={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          setDragging(true)
-        }}
-        onDragLeave={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          setDragging(false)
-        }}
-        onDrop={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          setDragging(false)
-          if (!uploading && e.dataTransfer.files.length) stageFiles(e.dataTransfer.files)
-        }}
-        className={cn(
-          'flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 transition-all',
-          dragging
-            ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-500/10'
-            : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50',
-          uploading && 'pointer-events-none opacity-60'
-        )}
-      >
+      {!isReporter && (
         <div
+          onDragOver={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setDragging(true)
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setDragging(false)
+          }}
+          onDrop={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setDragging(false)
+            if (!uploading && e.dataTransfer.files.length) stageFiles(e.dataTransfer.files)
+          }}
           className={cn(
-            'flex h-12 w-12 items-center justify-center rounded-full',
-            dragging ? 'bg-blue-100 dark:bg-blue-500/20' : 'bg-slate-200 dark:bg-slate-700'
+            'flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 transition-all',
+            dragging
+              ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-500/10'
+              : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50',
+            uploading && 'pointer-events-none opacity-60'
           )}
         >
-          <FiUpload className={cn('h-5 w-5', dragging ? 'text-blue-600' : 'text-slate-500')} />
-        </div>
-        <div className='text-center'>
-          <p className='text-sm font-semibold text-slate-700 dark:text-slate-200'>
-            {dragging ? 'Drop files here' : 'Drag & drop images here'}
-          </p>
-          <p className='mt-0.5 text-xs text-slate-400'>PNG, JPG, WEBP — max 10 MB each</p>
-        </div>
+          <div
+            className={cn(
+              'flex h-12 w-12 items-center justify-center rounded-full',
+              dragging ? 'bg-blue-100 dark:bg-blue-500/20' : 'bg-slate-200 dark:bg-slate-700'
+            )}
+          >
+            <FiUpload className={cn('h-5 w-5', dragging ? 'text-blue-600' : 'text-slate-500')} />
+          </div>
+          <div className='text-center'>
+            <p className='text-sm font-semibold text-slate-700 dark:text-slate-200'>
+              {dragging ? 'Drop files here' : 'Drag & drop images here'}
+            </p>
+            <p className='mt-0.5 text-xs text-slate-400'>PNG, JPG, WEBP — max 10 MB each</p>
+          </div>
 
-        {/* FIX: dùng <label> wrap <input> thay vì div onClick + ref.click() */}
-        <label
-          className={cn(
-            'cursor-pointer rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700',
-            'transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700',
-            uploading && 'pointer-events-none opacity-50'
-          )}
-        >
-          Browse files
-          <input
-            type='file'
-            accept='image/*'
-            multiple
-            className='sr-only'
-            onChange={(e) => {
-              if (e.target.files?.length) {
-                stageFiles(e.target.files)
-                e.target.value = '' // reset để chọn lại cùng file được
-              }
-            }}
-          />
-        </label>
-      </div>
+          {/* FIX: dùng <label> wrap <input> thay vì div onClick + ref.click() */}
+          <label
+            className={cn(
+              'cursor-pointer rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700',
+              'transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700',
+              uploading && 'pointer-events-none opacity-50'
+            )}
+          >
+            Browse files
+            <input
+              type='file'
+              accept='image/*'
+              multiple
+              className='sr-only'
+              onChange={(e) => {
+                if (e.target.files?.length) {
+                  stageFiles(e.target.files)
+                  e.target.value = '' // reset để chọn lại cùng file được
+                }
+              }}
+            />
+          </label>
+        </div>
+      )}
 
       {/* Upload error */}
       {uploadError && (
@@ -377,6 +393,7 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
               images={beforeImages}
               onDelete={deleteImage}
               onZoom={setLightbox}
+              allowDelete={!isTechnician && !isReporter}
             />
           )}
           {allowedTypes.includes('after') && (
@@ -386,6 +403,7 @@ export function TicketImageUpload({ ticketId, allowedTypes = ['before', 'after']
               images={afterImages}
               onDelete={deleteImage}
               onZoom={setLightbox}
+              allowDelete={!isReporter}
             />
           )}
         </div>
