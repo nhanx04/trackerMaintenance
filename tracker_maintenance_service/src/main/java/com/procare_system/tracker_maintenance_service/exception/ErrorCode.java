@@ -37,6 +37,8 @@ public enum ErrorCode {
     FILE_UPLOAD_FAILED( "Failed to upload file to storage", HttpStatus.INTERNAL_SERVER_ERROR),
     IMAGE_NOT_FOUND( "Image not found", HttpStatus.NOT_FOUND),
     IMAGE_NOT_BELONG_TO_TICKET( "Image does not belong to this ticket", HttpStatus.BAD_REQUEST),
+    TECHNICIAN_ID_REQUIRED( "Technician ID is required", HttpStatus.BAD_REQUEST),
+    NOTE_REQUIRED( "Note is required", HttpStatus.BAD_REQUEST)
     ;
 
     ErrorCode( String message, HttpStatus statusCode) {
@@ -46,6 +48,8 @@ public enum ErrorCode {
     public static class Key {
         public static final String DEVICE_CODE_REQUIRED = "DEVICE_CODE_REQUIRED";
         public static final String DEVICE_NAME_REQUIRED = "DEVICE_NAME_REQUIRED";
+        public static final String  TECHNICAIN_ID_REQUIRED = "TECHNICIAN_ID_REQUIRED";
+        public static final String NOTE_REQUIRED = "NOTE_REQUIRED";
     }
 
     final String message;

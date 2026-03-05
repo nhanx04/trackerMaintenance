@@ -22,6 +22,9 @@ public class TicketImage {
     @Column(nullable = false)
     String ticketId;
 
+    @Column(nullable = true)
+    String ticketProgressId;
+
     @Column(nullable = false)
     String imageUrl;
 

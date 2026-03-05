@@ -1,8 +1,10 @@
 package com.procare_system.tracker_maintenance_service.controller;
 
+import com.procare_system.tracker_maintenance_service.dto.request.AssignRequest;
 import com.procare_system.tracker_maintenance_service.dto.request.CreateTicketRequest;
 import com.procare_system.tracker_maintenance_service.dto.request.UpdateTicketRequest;
 import com.procare_system.tracker_maintenance_service.dto.response.ApiResponse;
+import com.procare_system.tracker_maintenance_service.dto.response.TicketProgressResponse;
 import com.procare_system.tracker_maintenance_service.dto.response.TicketResponse;
 import com.procare_system.tracker_maintenance_service.enums.TicketPriority;
 import com.procare_system.tracker_maintenance_service.enums.TicketStatus;
@@ -14,6 +16,11 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 
 @RestController
 @RequestMapping("/api/tickets")
@@ -79,5 +86,47 @@ public class TicketController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteTicket(@PathVariable String id) {
         ticketService.deleteTicket(id);
+    }
+
+
+    @PostMapping("/{id}/assign")
+    public ApiResponse<TicketResponse> assignTechnician(
+            @PathVariable String id,
+            @RequestBody AssignRequest request) {
+        return ApiResponse.<TicketResponse>builder()
+                .result(ticketService.assignTechnician(id, request))
+                .build();
+    }
+
+    @PostMapping("/{id}/accept")
+    public ApiResponse<TicketResponse> acceptTicket(@PathVariable String id) {
+        return ApiResponse.<TicketResponse>builder()
+                .result(ticketService.acceptTicket(id))
+                .build();
+    }
+
+    @PostMapping(value = "/{id}/progress", consumes = MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<TicketProgressResponse> updateProgress(
+            @PathVariable String id,
+            @RequestParam String note,
+            @RequestParam(value = "files", required = false) List<MultipartFile> files) {
+        return ApiResponse.<TicketProgressResponse>builder()
+                .result(ticketService.updateProgress(id, note, files))
+                .build();
+    }
+
+    @GetMapping("/{id}/progress")
+    public ApiResponse<List<TicketProgressResponse>> getTicketProgressHistory(
+            @PathVariable String id) {
+        return ApiResponse.<List<TicketProgressResponse>>builder()
+                .result(ticketService.getTicketProgressHistory(id))
+                .build();
+    }
+
+    @PostMapping("/{id}/complete")
+    public ApiResponse<TicketResponse> markAsCompleted(@PathVariable String id) {
+        return ApiResponse.<TicketResponse>builder()
+                .result(ticketService.markAsCompleted(id))
+                .build();
     }
 }

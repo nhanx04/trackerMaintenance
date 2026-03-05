@@ -1,14 +1,23 @@
 package com.procare_system.tracker_maintenance_service.service;
 
+import com.procare_system.tracker_maintenance_service.dto.request.AssignRequest;
 import com.procare_system.tracker_maintenance_service.dto.request.CreateTicketRequest;
 import com.procare_system.tracker_maintenance_service.dto.request.UpdateTicketRequest;
+import com.procare_system.tracker_maintenance_service.dto.response.TicketImageResponse;
+import com.procare_system.tracker_maintenance_service.dto.response.TicketProgressResponse;
 import com.procare_system.tracker_maintenance_service.dto.response.TicketResponse;
 import com.procare_system.tracker_maintenance_service.entity.Ticket;
+import com.procare_system.tracker_maintenance_service.entity.TicketImage;
+import com.procare_system.tracker_maintenance_service.entity.TicketProgress;
+import com.procare_system.tracker_maintenance_service.enums.ImageType;
 import com.procare_system.tracker_maintenance_service.enums.TicketPriority;
 import com.procare_system.tracker_maintenance_service.enums.TicketStatus;
 import com.procare_system.tracker_maintenance_service.exception.AppException;
 import com.procare_system.tracker_maintenance_service.exception.ErrorCode;
 import com.procare_system.tracker_maintenance_service.mapper.TicketMapper;
+import com.procare_system.tracker_maintenance_service.mapper.TicketProgressMapper;
+import com.procare_system.tracker_maintenance_service.repository.TicketImageRepository;
+import com.procare_system.tracker_maintenance_service.repository.TicketProgressRepository;
 import com.procare_system.tracker_maintenance_service.repository.TicketRepository;
 import com.procare_system.tracker_maintenance_service.repository.UserRepository;
 
@@ -23,11 +32,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +49,11 @@ public class TicketService {
     TicketRepository ticketRepository;
     TicketMapper ticketMapper;
     UserRepository userRepository;
+
+    TicketProgressRepository ticketProgressRepository;
+    TicketProgressMapper ticketProgressMapper;
+    TicketImageService ticketImageService;
+    TicketImageRepository  ticketImageRepository;
 
     //  Helper: lấy thông tin user
     private Authentication currentAuth() {
@@ -74,11 +91,16 @@ public class TicketService {
 
     private void validateStatusTransition(TicketStatus current, TicketStatus next) {
         boolean valid = switch (current) {
-            case PENDING    -> next == TicketStatus.IN_PROGRESS || next == TicketStatus.CANCELLED;
-            case IN_PROGRESS -> next == TicketStatus.DONE || next == TicketStatus.CANCELLED;
+            case PENDING -> next == TicketStatus.ASSIGNED || next == TicketStatus.CANCELLED;
+            case ASSIGNED -> next == TicketStatus.IN_PROGRESS;
+            case IN_PROGRESS -> next == TicketStatus.WAITING_FOR_CONFIRMATION;
+            case WAITING_FOR_CONFIRMATION -> next == TicketStatus.DONE;
             case DONE, CANCELLED -> false;
         };
-        if (!valid) throw new AppException(ErrorCode.TICKET_INVALID_STATUS_TRANSITION);
+
+        if (!valid) {
+            throw new AppException(ErrorCode.TICKET_INVALID_STATUS_TRANSITION);
+        }
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'REPORTER')")
@@ -196,6 +218,117 @@ public class TicketService {
         Ticket ticket = findActiveTicket(id);
         ticket.setDeleted(true);
         ticketRepository.save(ticket);
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public TicketResponse assignTechnician(String id, AssignRequest request) {
+        Ticket ticket = findActiveTicket(id);
+        validateStatusTransition(ticket.getStatus(), TicketStatus.ASSIGNED);
+
+        ticket.setAssignedTechnicianId(request.getTechnicianId());
+        ticket.setStatus(TicketStatus.ASSIGNED);
+        ticketRepository.save(ticket);
+
+        return ticketMapper.toTicketResponse(ticket);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public TicketResponse acceptTicket(String id) {
+        Ticket ticket = findActiveTicket(id);
+
+        if (!currentUserId().equals(ticket.getAssignedTechnicianId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+        validateStatusTransition(ticket.getStatus(), TicketStatus.IN_PROGRESS);
+
+        ticket.setStatus(TicketStatus.IN_PROGRESS);
+        ticketRepository.save(ticket);
+
+        return ticketMapper.toTicketResponse(ticket);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public TicketProgressResponse updateProgress(String id, String note, List<MultipartFile> files) {
+        Ticket ticket = findActiveTicket(id);
+
+        if (!currentUserId().equals(ticket.getAssignedTechnicianId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        if (ticket.getStatus() != TicketStatus.IN_PROGRESS) {
+            throw new AppException(ErrorCode.TICKET_INVALID_STATUS_TRANSITION);
+        }
+
+        TicketProgress progress = TicketProgress.builder()
+                .ticketId(ticket.getId())
+                .technicianId(currentUserId())
+                .note(note)
+                .build();
+        progress = ticketProgressRepository.save(progress);
+
+        //Set ảnh cho progess
+        List<TicketImageResponse> imageResponses = new ArrayList<>();
+
+        if (files != null && !files.isEmpty()) {
+            imageResponses = ticketImageService.saveProgressImages(ticket, String.valueOf(progress.getId()), files);
+        }
+
+        ticketRepository.save(ticket); // update timestamp của ticket
+
+        TicketProgressResponse response = ticketProgressMapper.toTicketProgressResponse(progress);
+        response.setImages(imageResponses);
+
+        return response;
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public TicketResponse markAsCompleted(String id) {
+        Ticket ticket = findActiveTicket(id);
+
+        if (!currentUserId().equals(ticket.getAssignedTechnicianId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+        validateStatusTransition(ticket.getStatus(), TicketStatus.WAITING_FOR_CONFIRMATION);
+
+        ticket.setStatus(TicketStatus.WAITING_FOR_CONFIRMATION);
+        ticketRepository.save(ticket);
+
+        return ticketMapper.toTicketResponse(ticket);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TECHNICIAN')")
+    public List<TicketProgressResponse> getTicketProgressHistory(String ticketId) {
+        List<TicketProgress> progresses = ticketProgressRepository.findByTicketIdOrderByCreatedAtDesc(ticketId);
+        List<TicketImage> allProgressImages = ticketImageRepository.findAllByTicketIdAndImageType(ticketId, ImageType.PROGRESS);
+
+        // Map các ảnh của ticket progress theo progress ID
+        Map<String, List<TicketImage>> imagesByProgressId = allProgressImages.stream()
+                .filter(img -> img.getTicketProgressId() != null) // Đảm bảo không bị lỗi null pointer
+                .collect(Collectors.groupingBy(TicketImage::getTicketProgressId));
+
+        // 4. Map sang Response theo progressID và gán ảnh tương ứng
+        return progresses.stream().map(progress -> {
+            TicketProgressResponse response = ticketProgressMapper.toTicketProgressResponse(progress);
+            List<TicketImage> matchedImages = imagesByProgressId.getOrDefault(progress.getId(), new ArrayList<>());
+
+            List<TicketImageResponse> imageResponses = matchedImages.stream()
+                    .map(img -> TicketImageResponse.builder()
+                            .id(img.getId())
+                            .ticketId(img.getTicketId())
+                            .imageUrl(img.getImageUrl())
+                            .imageType(img.getImageType())
+                            .uploadedByUserId(img.getUploadedByUserId())
+                            .uploadedAt(img.getUploadedAt())
+                            .build())
+                    .toList();
+
+            response.setImages(imageResponses);
+            return response;
+        }).toList();
     }
 
     //  Private helpers
