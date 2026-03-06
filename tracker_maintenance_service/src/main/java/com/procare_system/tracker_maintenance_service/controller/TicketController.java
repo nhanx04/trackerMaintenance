@@ -129,4 +129,25 @@ public class TicketController {
                 .result(ticketService.markAsCompleted(id))
                 .build();
     }
+
+    @PutMapping("/{id}/progress/{progressId}")
+    public ApiResponse<TicketProgressResponse> updateProgressNote(
+            @PathVariable String id,
+            @PathVariable String progressId,
+            @RequestParam("note") String newNote) {
+        return ApiResponse.<TicketProgressResponse>builder()
+                .result(ticketService.updateProgressNote(id, progressId, newNote))
+                .build();
+    }
+
+    @DeleteMapping("/{id}/progress/{progressId}")
+    public ApiResponse<String> deleteProgress(
+            @PathVariable String id,
+            @PathVariable String progressId) {
+        ticketService.deleteProgress(id, progressId);
+        return ApiResponse.<String>builder()
+                .result("Ticket progress has been deleted successfully")
+                .build();
+    }
+
 }

@@ -38,7 +38,8 @@ public enum ErrorCode {
     IMAGE_NOT_FOUND( "Image not found", HttpStatus.NOT_FOUND),
     IMAGE_NOT_BELONG_TO_TICKET( "Image does not belong to this ticket", HttpStatus.BAD_REQUEST),
     TECHNICIAN_ID_REQUIRED( "Technician ID is required", HttpStatus.BAD_REQUEST),
-    NOTE_REQUIRED( "Note is required", HttpStatus.BAD_REQUEST)
+    NOTE_REQUIRED( "Note is required", HttpStatus.BAD_REQUEST),
+    PROGRESS_NOT_FOUND( "Ticket progress not found", HttpStatus.NOT_FOUND)
     ;
 
     ErrorCode( String message, HttpStatus statusCode) {

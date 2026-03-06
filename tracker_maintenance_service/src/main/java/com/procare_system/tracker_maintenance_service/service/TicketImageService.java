@@ -94,13 +94,12 @@ public class TicketImageService {
     public List<TicketImageResponse> saveProgressImages(
             Ticket ticket, String ticketProgressId, List<MultipartFile> files) {
 
-        // Không cần check quyền ở đây vì TicketService đã check rồi
         String folder = "tickets/" + ticket.getId() + "/progress/" + ticketProgressId;
         List<String> objectKeys = r2StorageService.uploadImages(files, folder);
 
         List<TicketImage> images = objectKeys.stream().map(key -> TicketImage.builder()
                 .ticketId(ticket.getId())
-                .ticketProgressId(ticketProgressId) // Đánh dấu ảnh này thuộc về Note tiến độ nào
+                .ticketProgressId(ticketProgressId)
                 .objectKey(key)
                 .imageUrl(r2StorageService.toPublicUrl(key))
                 .imageType(ImageType.PROGRESS)
@@ -110,6 +109,19 @@ public class TicketImageService {
 
         ticketImageRepository.saveAll(images);
         return images.stream().map(this::toResponse).toList();
+    }
+
+    @Transactional
+    public void deleteAllImagesByProgressId(String ticketId, String progressId) {
+        List<TicketImage> images = ticketImageRepository.findAllByTicketIdAndImageType(ticketId, ImageType.PROGRESS)
+                .stream()
+                .filter(img -> progressId.equals(img.getTicketProgressId()))
+                .toList();
+        for (TicketImage img : images) {
+            r2StorageService.deleteImage(img.getObjectKey());
+        }
+
+        ticketImageRepository.deleteAll(images);
     }
 
     //  Private helpers

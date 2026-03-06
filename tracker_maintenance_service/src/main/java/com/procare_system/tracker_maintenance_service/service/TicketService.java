@@ -284,22 +284,6 @@ public class TicketService {
         return response;
     }
 
-    @Transactional
-    @PreAuthorize("hasRole('TECHNICIAN')")
-    public TicketResponse markAsCompleted(String id) {
-        Ticket ticket = findActiveTicket(id);
-
-        if (!currentUserId().equals(ticket.getAssignedTechnicianId())) {
-            throw new AppException(ErrorCode.ACCESS_DENIED);
-        }
-        validateStatusTransition(ticket.getStatus(), TicketStatus.WAITING_FOR_CONFIRMATION);
-
-        ticket.setStatus(TicketStatus.WAITING_FOR_CONFIRMATION);
-        ticketRepository.save(ticket);
-
-        return ticketMapper.toTicketResponse(ticket);
-    }
-
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TECHNICIAN')")
     public List<TicketProgressResponse> getTicketProgressHistory(String ticketId) {
         List<TicketProgress> progresses = ticketProgressRepository.findByTicketIdOrderByCreatedAtDesc(ticketId);
@@ -307,7 +291,7 @@ public class TicketService {
 
         // Map các ảnh của ticket progress theo progress ID
         Map<String, List<TicketImage>> imagesByProgressId = allProgressImages.stream()
-                .filter(img -> img.getTicketProgressId() != null) // Đảm bảo không bị lỗi null pointer
+                .filter(img -> img.getTicketProgressId() != null)
                 .collect(Collectors.groupingBy(TicketImage::getTicketProgressId));
 
         // 4. Map sang Response theo progressID và gán ảnh tương ứng
@@ -330,6 +314,65 @@ public class TicketService {
             return response;
         }).toList();
     }
+    @Transactional
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public TicketProgressResponse updateProgressNote(String ticketId, String progressId, String newNote) {
+        Ticket ticket = findActiveTicket(ticketId);
+
+        if (ticket.getStatus() != TicketStatus.IN_PROGRESS) {
+            throw new AppException(ErrorCode.TICKET_INVALID_STATUS_TRANSITION);
+        }
+
+        TicketProgress progress = ticketProgressRepository.findById(progressId)
+                .orElseThrow(() -> new AppException(ErrorCode.PROGRESS_NOT_FOUND));
+
+        if (!progress.getTechnicianId().equals(currentUserId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        progress.setNote(newNote);
+        ticketProgressRepository.save(progress);
+        return ticketProgressMapper.toTicketProgressResponse(progress);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public void deleteProgress(String ticketId, String progressId) {
+        Ticket ticket = findActiveTicket(ticketId);
+
+        if (ticket.getStatus() != TicketStatus.IN_PROGRESS) {
+            throw new AppException(ErrorCode.TICKET_INVALID_STATUS_TRANSITION);
+        }
+
+        TicketProgress progress = ticketProgressRepository.findById(progressId)
+                .orElseThrow(() -> new AppException(ErrorCode.PROGRESS_NOT_FOUND));
+
+        if (!progress.getTechnicianId().equals(currentUserId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        ticketImageService.deleteAllImagesByProgressId(ticketId, progressId);
+
+        ticketProgressRepository.delete(progress);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public TicketResponse markAsCompleted(String id) {
+        Ticket ticket = findActiveTicket(id);
+
+        if (!currentUserId().equals(ticket.getAssignedTechnicianId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+        validateStatusTransition(ticket.getStatus(), TicketStatus.WAITING_FOR_CONFIRMATION);
+
+        ticket.setStatus(TicketStatus.WAITING_FOR_CONFIRMATION);
+        ticketRepository.save(ticket);
+
+        return ticketMapper.toTicketResponse(ticket);
+    }
+
+
 
     //  Private helpers
     private Ticket findActiveTicket(String id) {
