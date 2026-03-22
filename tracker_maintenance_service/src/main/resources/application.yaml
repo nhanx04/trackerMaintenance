@@ -1,4 +1,7 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
   application:
     name: tracker_maintenance_service
   servlet:
@@ -8,9 +11,9 @@ spring:
       max-request-size: 100MB   # tối đa 10 file × 10MB
 
   datasource:
-    url: jdbc:postgresql://aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres
-    username: postgres.tgmwwmbbcqzcvyaaspae
-    password: Hahaha5577991.
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -23,7 +26,7 @@ spring:
       mode: never
 
 jwt:
-  signerKey: dmfWBuIIiGyXCJWG/6cioNLt7IRMSp3CgKMRitccCgDZKe/PQMHI6/gt1oGYNAGX
+  signerKey: ${JWT_SIGNER_KEY}
   valid-duration: 300 # in second
   refreshable-duration: 1800 # in second
 
@@ -33,6 +36,6 @@ cloudflare:
     endpoint: https://35c1e2b268d20d1a9ea899121b159d74.r2.cloudflarestorage.com/tracker-maintennance
     publicUrl: https://pub-d6fe58f1fd4a4bddaf8f4f390153b02a.r2.dev
     bucketName: tracker-maintennance
-    accessKey: 089a39597cc71e87377d0323acb56f34
-    secretKey: 347d8c0b1e7df4eb637735c3a4360b48121eec5937fce5326b7fd4983321d920
+    accessKey: ${APP_R2_ACCESS_KEY_ID}
+    secretKey: ${APP_R2_SECRET_ACCESS_KEY}
     region: auto
