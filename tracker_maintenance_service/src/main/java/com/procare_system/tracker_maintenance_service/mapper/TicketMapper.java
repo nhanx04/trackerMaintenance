@@ -11,6 +11,8 @@ public interface TicketMapper {
 
     Ticket toTicket(CreateTicketRequest request);
 
+    @Mapping(source = "unresolvableReason", target = "unresolvableReason")
+    @Mapping(source = "confirmedByUserId",  target = "confirmedByUserId")
     TicketResponse toTicketResponse(Ticket ticket);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

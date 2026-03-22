@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -149,5 +150,31 @@ public class TicketController {
                 .result("Ticket progress has been deleted successfully")
                 .build();
     }
+
+        @PostMapping("/{id}/unresolvable")
+        @PreAuthorize("hasRole('TECHNICIAN')")
+        public ApiResponse<TicketResponse> markAsUnresolvable(
+                @PathVariable String id,
+                @RequestParam String reason) {
+        return ApiResponse.<TicketResponse>builder()
+                .result(ticketService.markAsUnresolvable(id, reason))
+                .build();
+        }
+
+        @PostMapping("/{id}/confirm")
+        @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+        public ApiResponse<TicketResponse> confirmCompletion(@PathVariable String id) {
+        return ApiResponse.<TicketResponse>builder()
+                .result(ticketService.confirmCompletion(id))
+                .build();
+        }
+
+        @GetMapping("/devices/{deviceId}/history")
+        public ApiResponse<List<TicketResponse>> getMaintenanceHistory(
+                @PathVariable String deviceId) {
+        return ApiResponse.<List<TicketResponse>>builder()
+                .result(ticketService.getMaintenanceHistoryByDevice(deviceId))
+                .build();
+        }
 
 }

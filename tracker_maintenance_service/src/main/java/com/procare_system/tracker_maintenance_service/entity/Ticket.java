@@ -37,7 +37,7 @@ public class Ticket {
     TicketPriority priority;
 
     @Column(nullable = false)
-    String deviceId;         
+    String deviceId;
 
     String assignedTechnicianId;
 
@@ -53,4 +53,9 @@ public class Ticket {
 
     @UpdateTimestamp
     LocalDateTime updatedAt;
+
+    @Column(columnDefinition = "TEXT")
+    String unresolvableReason;
+
+    String confirmedByUserId;
 }

@@ -93,9 +93,9 @@ public class TicketService {
         boolean valid = switch (current) {
             case PENDING -> next == TicketStatus.ASSIGNED || next == TicketStatus.CANCELLED;
             case ASSIGNED -> next == TicketStatus.IN_PROGRESS;
-            case IN_PROGRESS -> next == TicketStatus.WAITING_FOR_CONFIRMATION;
+            case IN_PROGRESS -> next == TicketStatus.WAITING_FOR_CONFIRMATION || next == TicketStatus.UNRESOLVABLE;
             case WAITING_FOR_CONFIRMATION -> next == TicketStatus.DONE;
-            case DONE, CANCELLED -> false;
+            case UNRESOLVABLE, DONE, CANCELLED -> false;
         };
 
         if (!valid) {
@@ -372,9 +372,56 @@ public class TicketService {
         return ticketMapper.toTicketResponse(ticket);
     }
 
+    @Transactional
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public TicketResponse markAsUnresolvable(String id, String reason) {
+        Ticket ticket = findActiveTicket(id);
+
+        if (!currentUserId().equals(ticket.getAssignedTechnicianId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        if (ticket.getStatus() != TicketStatus.IN_PROGRESS) {
+            throw new AppException(ErrorCode.TICKET_INVALID_STATUS_TRANSITION);
+        }
+
+        ticket.setStatus(TicketStatus.UNRESOLVABLE);
+        ticket.setUnresolvableReason(reason);
+        System.out.println("Before save: " + ticket.getUnresolvableReason()); // phải có giá trị
+        ticketRepository.save(ticket);
+        System.out.println("After save: " + ticket.getUnresolvableReason());  // có bị reset không?
+
+        return ticketMapper.toTicketResponse(ticket);
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public TicketResponse confirmCompletion(String id) {
+        Ticket ticket = findActiveTicket(id);
+
+        if (ticket.getStatus() != TicketStatus.WAITING_FOR_CONFIRMATION) {
+            throw new AppException(ErrorCode.TICKET_INVALID_STATUS_TRANSITION);
+        }
+
+        ticket.setStatus(TicketStatus.DONE);
+        ticket.setConfirmedByUserId(currentUserId());
+        ticketRepository.saveAndFlush(ticket);
+
+        return ticketMapper.toTicketResponse(ticket);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TECHNICIAN', 'REPORTER')")
+    public List<TicketResponse> getMaintenanceHistoryByDevice(String deviceId) {
+        List<Ticket> tickets = ticketRepository
+                .findByDeviceIdAndStatusAndIsDeletedFalseOrderByUpdatedAtDesc(
+                        deviceId, TicketStatus.DONE);
+        return tickets.stream()
+                .map(ticketMapper::toTicketResponse)
+                .toList();
+    }
 
 
-    //  Private helpers
+
     private Ticket findActiveTicket(String id) {
         return ticketRepository.findById(id)
                 .filter(t -> !t.isDeleted())

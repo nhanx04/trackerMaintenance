@@ -2,6 +2,8 @@ package com.procare_system.tracker_maintenance_service.dto.response;
 
 import com.procare_system.tracker_maintenance_service.enums.TicketPriority;
 import com.procare_system.tracker_maintenance_service.enums.TicketStatus;
+
+import jakarta.persistence.Column;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -18,6 +20,10 @@ public class TicketResponse {
     String title;
     String description;
     TicketStatus status;
+
+    String unresolvableReason;
+    String confirmedByUserId;
+
     TicketPriority priority;
     String deviceId;
     String assignedTechnicianId;
