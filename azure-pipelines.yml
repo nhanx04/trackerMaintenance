@@ -20,7 +20,7 @@ stages:
         containerRegistry: 'acr-connection'
         repository: '$(imageName)'
         command: 'buildAndPush'
-        Dockerfile: '**/be/Dockerfile'
+        Dockerfile: '/tracker_maintenance_service/Dockerfile'
         tags: |
           latest
           $(Build.BuildId)
