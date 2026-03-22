@@ -143,4 +143,15 @@ public class DeviceService {
 
         return deviceMapper.toDeviceResponse(device);
     }
+
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public DeviceResponse updateDeviceStatus(Long id, DeviceStatus status) {
+        Device device = deviceRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.DEVICE_ID_NOT_EXISTED));
+
+        device.setStatus(status);
+        deviceRepository.save(device);
+
+        return deviceMapper.toDeviceResponse(device);
+    }
 }

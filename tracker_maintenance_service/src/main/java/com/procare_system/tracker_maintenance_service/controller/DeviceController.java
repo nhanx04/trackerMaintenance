@@ -82,4 +82,13 @@ public class DeviceController {
                 .result("Device image has been deleted successfully")
                 .build();
     }
+
+    @PatchMapping("/{id}/status")
+    public ApiResponse<DeviceResponse> updateDeviceStatus(
+                @PathVariable Long id,
+                @RequestParam DeviceStatus status) {
+    return ApiResponse.<DeviceResponse>builder()
+                .result(deviceService.updateDeviceStatus(id, status))
+                .build();
+        }
 }
