@@ -151,14 +151,17 @@ export function TicketTable({
                           Cancel
                         </button>
                       )}
-                      {onAccept && ticket.status === 'WAITING_FOR_CONFIRMATION' && ticket.assignedTechnicianId && (
-                        <button
-                          onClick={() => onAccept(ticket)}
-                          className='rounded-md px-2.5 py-1 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10'
-                        >
-                          Confirm
-                        </button>
-                      )}
+                      {onAccept &&
+                        ticket.status === 'WAITING_FOR_CONFIRMATION' &&
+                        ticket.assignedTechnicianId &&
+                        currentUserRole !== 'TECHNICIAN' && (
+                          <button
+                            onClick={() => onAccept(ticket)}
+                            className='rounded-md px-2.5 py-1 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10'
+                          >
+                            Confirm
+                          </button>
+                        )}
                       {onDelete && (
                         <button
                           onClick={() => onDelete(ticket)}
