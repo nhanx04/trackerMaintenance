@@ -91,7 +91,15 @@ export const ticketApi = {
   },
 
   deleteImage: (ticketId: string, imageId: string): Promise<void> =>
-    req<void>(`/api/tickets/${ticketId}/images/${imageId}`, { method: 'DELETE' })
+    req<void>(`/api/tickets/${ticketId}/images/${imageId}`, { method: 'DELETE' }),
+
+  accept: (id: string): Promise<Ticket> => req<Ticket>(`/api/tickets/${id}/accept`, { method: 'POST' }),
+
+  assign: (id: string, technicianId: string): Promise<Ticket> =>
+    req<Ticket>(`/api/tickets/${id}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ technicianId })
+    })
 }
 
 export type TechnicianUser = {

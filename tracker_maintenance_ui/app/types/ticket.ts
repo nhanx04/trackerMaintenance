@@ -1,6 +1,13 @@
 import type { PageResult } from './auth'
 
-export type TicketStatus = 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'
+export type TicketStatus =
+  | 'PENDING'
+  | 'ASSIGNED'
+  | 'IN_PROGRESS'
+  | 'WAITING_FOR_CONFIRMATION'
+  | 'UNRESOLVABLE'
+  | 'DONE'
+  | 'CANCELLED'
 export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH'
 export type ImageType = 'BEFORE' | 'AFTER'
 

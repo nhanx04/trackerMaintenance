@@ -147,13 +147,15 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete }: Dra
   }
 
   async function handleAssign() {
+    if (!assignId) {
+      setAssignError('Please select a technician to assign')
+      return
+    }
     setAssignLoading(true)
     setAssignError(null)
     setAssignSuccess(false)
     try {
-      await ticketApi.update(ticket.id, {
-        assignedTechnicianId: assignId === '' ? null : assignId
-      } as UpdateTicketRequest)
+      await ticketApi.assign(ticket.id, assignId)
       setAssignSuccess(true)
       setTimeout(() => setAssignSuccess(false), 2500)
       onUpdated()
@@ -307,7 +309,7 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete }: Dra
                       onChange={(e) => setAssignId(e.target.value)}
                       className='w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 pr-9 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white'
                     >
-                      <option value=''>— Unassign —</option>
+                      <option value=''>Select technician</option>
                       {technicians.map((tech) => (
                         <option key={tech.id} value={tech.id}>
                           {tech.firstName ? `${tech.firstName} ${tech.lastName ?? ''}`.trim() : tech.username}
@@ -569,7 +571,7 @@ export default function AdminTicketsPage() {
             ['IN_PROGRESS', 'In Progress', 'text-amber-600'],
             ['DONE', 'Completed', 'text-emerald-600'],
             ['CANCELLED', 'Cannot Resolve', 'text-rose-600']
-          ] as [TicketStatus, string, string][]
+          ] as ['PENDING' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED', string, string][]
         ).map(([s, label, accent]) => (
           <button
             key={s}
