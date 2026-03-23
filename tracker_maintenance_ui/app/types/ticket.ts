@@ -8,7 +8,6 @@ export type TicketStatus =
   | 'UNRESOLVABLE'
   | 'DONE'
   | 'CANCELLED'
-
 export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH'
 export type ImageType = 'BEFORE' | 'AFTER'
 
@@ -19,6 +18,16 @@ export interface TicketImage {
   imageType: ImageType
   uploadedByUserId: string
   uploadedAt: string
+}
+
+export interface TicketProgress {
+  id: string
+  ticketId: string
+  technicianId: string
+  note: string
+  createdAt: string
+  updatedAt: string
+  images: TicketImage[]
 }
 
 export interface Ticket {

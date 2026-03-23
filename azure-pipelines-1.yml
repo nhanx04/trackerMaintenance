@@ -1,0 +1,20 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- checkout: none
+
+- script: |
+    git config --global user.email "you@example.com"
+    git config --global user.name "your-name"
+
+    git clone --mirror https://$(AZURE_REPO)
+    cd $(REPO_NAME).git
+
+    git remote add github https://$(GITHUB_TOKEN)@github.com/$(GITHUB_USERNAME)/$(GITHUB_REPO).git
+
+    git push --mirror github
+  displayName: "Sync to GitHub"

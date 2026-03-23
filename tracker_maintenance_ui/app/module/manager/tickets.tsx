@@ -6,6 +6,7 @@ import { AppLayout } from '@/layouts/AppLayout'
 import { PageHeader } from '@/components/ui-custom/PageHeader'
 import { TicketTable } from '@/module/shared/TicketTable'
 import { TicketImageUpload } from '@/module/shared/TicketImageUpload'
+import { TicketProgressPanel } from '@/module/shared/TicketProgressPanel'
 import { ticketApi, getTechnicians } from '@/lib/ticketApi'
 import { equipmentApi } from '@/lib/equipmentApi'
 import { cn } from '@/lib/cn'
@@ -123,7 +124,7 @@ type DrawerProps = {
 }
 
 function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete }: DrawerProps) {
-  const [tab, setTab] = useState<'detail' | 'images'>('detail')
+  const [tab, setTab] = useState<'detail' | 'progress' | 'images'>('detail')
 
   // Status
   const [nextStatus, setNextStatus] = useState<TicketStatus | ''>('')
@@ -154,12 +155,25 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete }: Dra
     }
   }
 
+  async function handleConfirmCompletion() {
+    setStatusLoading(true)
+    setStatusError(null)
+    try {
+      await ticketApi.confirmCompletion(ticket.id)
+      onUpdated()
+      onClose()
+    } catch (e) {
+      setStatusError(e instanceof Error ? e.message : 'Failed to confirm completion')
+    } finally {
+      setStatusLoading(false)
+    }
+  }
+
   async function handleAssign() {
     if (!assignId) {
-      setAssignError('Please select technician')
+      setAssignError('Please select a technician to assign')
       return
     }
-
     setAssignLoading(true)
     setAssignError(null)
     setAssignSuccess(false)
@@ -203,7 +217,7 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete }: Dra
 
         {/* ── Tabs (mới thêm) ── */}
         <div className='flex border-b border-slate-200 dark:border-slate-700'>
-          {(['detail', 'images'] as const).map((t) => (
+          {(['detail', 'progress', 'images'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -214,7 +228,7 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete }: Dra
                   : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
               )}
             >
-              {t === 'images' ? 'Before / After' : 'Details'}
+              {t === 'images' ? 'Before / After' : t === 'progress' ? 'Progress' : 'Details'}
             </button>
           ))}
         </div>
@@ -319,7 +333,7 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete }: Dra
                       onChange={(e) => setAssignId(e.target.value)}
                       className='w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 pr-9 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white'
                     >
-                      <option value=''>— Unassign —</option>
+                      <option value=''>Select technician</option>
                       {technicians.map((tech) => (
                         <option key={tech.id} value={tech.id}>
                           {tech.firstName ? `${tech.firstName} ${tech.lastName ?? ''}`.trim() : tech.username}
@@ -372,9 +386,21 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete }: Dra
                 >
                   {statusLoading ? 'Saving…' : 'Save Status'}
                 </button>
+
+                {ticket.status === 'WAITING_FOR_CONFIRMATION' && (
+                  <button
+                    onClick={handleConfirmCompletion}
+                    disabled={statusLoading}
+                    className='mt-3 w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60'
+                  >
+                    {statusLoading ? 'Confirming…' : 'Confirm completion (Done)'}
+                  </button>
+                )}
               </div>
             </div>
           )}
+
+          {tab === 'progress' && <TicketProgressPanel ticketId={ticket.id} ticketStatus={ticket.status} />}
 
           {/* ── Images tab (mới thêm) ── */}
           {tab === 'images' && <TicketImageUpload ticketId={ticket.id} />}
@@ -584,7 +610,7 @@ export default function ManagerTicketsPage() {
     )
   }
 
-  const counts = {
+  const counts: Partial<Record<TicketStatus, number>> = {
     PENDING: tickets.filter((t) => t.status === 'PENDING').length,
     ASSIGNED: tickets.filter((t) => t.status === 'ASSIGNED').length,
     IN_PROGRESS: tickets.filter((t) => t.status === 'IN_PROGRESS').length,
@@ -753,7 +779,7 @@ export default function ManagerTicketsPage() {
             deviceLabelById={deviceLabelById}
             onView={(ticket) => setSelected(ticket)}
             onDelete={(t) => setToDelete(t)}
-            onConfirmComplete={(t) => setToConfirm(t)}
+            onAccept={(t) => setToConfirm(t)}
             onCancel={handleCancel}
             actionLabel='Manage'
           />

@@ -27,11 +27,11 @@ import java.util.List;
 public class TicketImageService {
 
     TicketImageRepository ticketImageRepository;
-    TicketRepository      ticketRepository;
-    R2StorageService      r2StorageService;
+    TicketRepository ticketRepository;
+    R2StorageService r2StorageService;
 
-    //  Chỉ upload được khi ticket đang PENDING
-    //  Quyền: ADMIN, MANAGER, REPORTER (người tạo)
+    // Chỉ upload được khi ticket đang PENDING
+    // Quyền: ADMIN, MANAGER, REPORTER (người tạo)
     @Transactional
     public List<TicketImageResponse> uploadBeforeImages(
             String ticketId, List<MultipartFile> files) {
@@ -46,15 +46,18 @@ public class TicketImageService {
         return doUpload(ticket, files, ImageType.BEFORE);
     }
 
-    //  Chỉ upload được khi ticket DONE
-    //  Quyền: ADMIN, MANAGER, TECHNICIAN (được assign)
+    // Upload AFTER khi ticket ở IN_PROGRESS, WAITING_FOR_CONFIRMATION hoặc DONE
+    // Quyền: ADMIN, MANAGER, TECHNICIAN (được assign)
     @Transactional
     public List<TicketImageResponse> uploadAfterImages(
             String ticketId, List<MultipartFile> files) {
 
         Ticket ticket = findActiveTicket(ticketId);
 
-        if (ticket.getStatus() != TicketStatus.DONE)
+        boolean validStatus = ticket.getStatus() == TicketStatus.IN_PROGRESS
+                || ticket.getStatus() == TicketStatus.WAITING_FOR_CONFIRMATION
+                || ticket.getStatus() == TicketStatus.DONE;
+        if (!validStatus)
             throw new AppException(ErrorCode.TICKET_INVALID_STATUS_TRANSITION);
 
         checkUploadPermission(ticket, ImageType.AFTER);
@@ -62,20 +65,18 @@ public class TicketImageService {
         return doUpload(ticket, files, ImageType.AFTER);
     }
 
-    //  Lấy tất cả ảnh của ticket
+    // Lấy tất cả ảnh của ticket
     public List<TicketImageResponse> getImages(String ticketId) {
         findActiveTicket(ticketId); // validate tồn tại
         return ticketImageRepository.findAllByTicketId(ticketId)
                 .stream().map(this::toResponse).toList();
     }
 
-
     public List<TicketImageResponse> getImagesByType(String ticketId, ImageType type) {
         findActiveTicket(ticketId);
         return ticketImageRepository.findAllByTicketIdAndImageType(ticketId, type)
                 .stream().map(this::toResponse).toList();
     }
-
 
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Transactional
@@ -104,8 +105,7 @@ public class TicketImageService {
                 .imageUrl(r2StorageService.toPublicUrl(key))
                 .imageType(ImageType.PROGRESS)
                 .uploadedByUserId(currentUserId())
-                .build()
-        ).toList();
+                .build()).toList();
 
         ticketImageRepository.saveAll(images);
         return images.stream().map(this::toResponse).toList();
@@ -124,11 +124,11 @@ public class TicketImageService {
         ticketImageRepository.deleteAll(images);
     }
 
-    //  Private helpers
+    // Private helpers
     private List<TicketImageResponse> doUpload(
             Ticket ticket, List<MultipartFile> files, ImageType type) {
 
-        // folder: tickets/{ticketId}/before  hoặc  tickets/{ticketId}/after
+        // folder: tickets/{ticketId}/before hoặc tickets/{ticketId}/after
         String folder = "tickets/" + ticket.getId() + "/" + type.name().toLowerCase();
 
         List<String> objectKeys = r2StorageService.uploadImages(files, folder);
@@ -139,8 +139,7 @@ public class TicketImageService {
                 .imageUrl(r2StorageService.toPublicUrl(key))
                 .imageType(type)
                 .uploadedByUserId(currentUserId())
-                .build()
-        ).toList();
+                .build()).toList();
 
         ticketImageRepository.saveAll(images);
         return images.stream().map(this::toResponse).toList();
@@ -151,7 +150,8 @@ public class TicketImageService {
         String uid = currentUserId();
 
         boolean isAdminOrManager = hasRole(auth, "ADMIN") || hasRole(auth, "MANAGER");
-        if (isAdminOrManager) return;
+        if (isAdminOrManager)
+            return;
 
         if (type == ImageType.BEFORE && hasRole(auth, "REPORTER")) {
             // Reporter chỉ được upload ảnh BEFORE cho ticket mình tạo

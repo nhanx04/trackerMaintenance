@@ -6,7 +6,8 @@ import type {
   TicketImage,
   ImageType,
   CreateTicketRequest,
-  UpdateTicketRequest
+  UpdateTicketRequest,
+  TicketProgress
 } from '@/types/ticket'
 
 type ApiResponse<T> = { code?: number; message?: string; result: T }
@@ -81,19 +82,11 @@ export const ticketApi = {
 
   confirmComplete: (id: string): Promise<Ticket> => req<Ticket>(`/api/tickets/${id}/confirm`, { method: 'POST' }),
 
-  markAsCompleted: (id: string): Promise<Ticket> => req<Ticket>(`/api/tickets/${id}/complete`, { method: 'POST' }),
-
   uploadImages: (ticketId: string, type: 'before' | 'after', files: File[]): Promise<TicketImage[]> => {
     const form = new FormData()
     files.forEach((f) => form.append('files', f))
     return reqForm<TicketImage[]>(`/api/tickets/${ticketId}/images/${type}`, form)
   },
-
-  assign: (id: string, technicianId: string): Promise<Ticket> =>
-    req<Ticket>(`/api/tickets/${id}/assign`, {
-      method: 'POST',
-      body: JSON.stringify({ technicianId: String(technicianId) })
-    }),
 
   getImages: (ticketId: string, type?: ImageType): Promise<TicketImage[]> => {
     const url = type ? `/api/tickets/${ticketId}/images?type=${type}` : `/api/tickets/${ticketId}/images`
@@ -101,7 +94,34 @@ export const ticketApi = {
   },
 
   deleteImage: (ticketId: string, imageId: string): Promise<void> =>
-    req<void>(`/api/tickets/${ticketId}/images/${imageId}`, { method: 'DELETE' })
+    req<void>(`/api/tickets/${ticketId}/images/${imageId}`, { method: 'DELETE' }),
+
+  accept: (id: string): Promise<Ticket> => req<Ticket>(`/api/tickets/${id}/accept`, { method: 'POST' }),
+
+  assign: (id: string, technicianId: string): Promise<Ticket> =>
+    req<Ticket>(`/api/tickets/${id}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ technicianId })
+    }),
+
+  updateProgress: (ticketId: string, note: string, files: File[] = []): Promise<TicketProgress> => {
+    const form = new FormData()
+    form.append('note', note)
+    files.forEach((f) => form.append('files', f))
+    return reqForm<TicketProgress>(`/api/tickets/${ticketId}/progress`, form)
+  },
+
+  getProgressHistory: (ticketId: string): Promise<TicketProgress[]> =>
+    req<TicketProgress[]>(`/api/tickets/${ticketId}/progress`),
+
+  markAsCompleted: (ticketId: string): Promise<Ticket> =>
+    req<Ticket>(`/api/tickets/${ticketId}/complete`, { method: 'POST' }),
+
+  markAsUnresolvable: (ticketId: string, reason: string): Promise<Ticket> =>
+    req<Ticket>(`/api/tickets/${ticketId}/unresolvable?reason=${encodeURIComponent(reason)}`, { method: 'POST' }),
+
+  confirmCompletion: (ticketId: string): Promise<Ticket> =>
+    req<Ticket>(`/api/tickets/${ticketId}/confirm`, { method: 'POST' })
 }
 
 export type TechnicianUser = {
