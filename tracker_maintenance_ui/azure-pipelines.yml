@@ -4,14 +4,33 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
+variables:
+  NODE_VERSION: '20.x'
+  WORKING_DIR: 'tracker_maintenance_ui'
+
 steps:
-  - script: npm install
-    displayName: Install dependencies
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '$(NODE_VERSION)'
+    displayName: 'Use Node.js $(NODE_VERSION)'
+
+  - script: npm ci
+    workingDirectory: '$(WORKING_DIR)'
+    displayName: 'Install dependencies'
 
   - script: npm run build
-    displayName: Build project
+    workingDirectory: '$(WORKING_DIR)'
+    displayName: 'Build project (verify before deploy)'
+
+  - script: npm i -g vercel
+    displayName: 'Install Vercel CLI'
 
   - script: |
-      npm i -g vercel
-      vercel --prod --token=$(VERCEL_TOKEN) --confirm
-    displayName: Deploy to Vercel
+      vercel pull --yes --environment=production --token=$(VERCEL_TOKEN)
+      vercel build --prod --token=$(VERCEL_TOKEN) --build-env VITE_API_BASE_URL=$(VITE_API_BASE_URL)
+      vercel deploy --prebuilt --prod --token=$(VERCEL_TOKEN)
+    workingDirectory: '$(WORKING_DIR)'
+    displayName: 'Deploy to Vercel (Production)'
+    env:
+      VERCEL_ORG_ID: $(VERCEL_ORG_ID)
+      VERCEL_PROJECT_ID: $(VERCEL_PROJECT_ID)
