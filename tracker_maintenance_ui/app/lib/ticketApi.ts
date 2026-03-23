@@ -121,7 +121,10 @@ export const ticketApi = {
     req<Ticket>(`/api/tickets/${ticketId}/unresolvable?reason=${encodeURIComponent(reason)}`, { method: 'POST' }),
 
   confirmCompletion: (ticketId: string): Promise<Ticket> =>
-    req<Ticket>(`/api/tickets/${ticketId}/confirm`, { method: 'POST' })
+    req<Ticket>(`/api/tickets/${ticketId}/confirm`, { method: 'POST' }),
+
+  getMaintenanceHistory: (deviceId: string): Promise<Ticket[]> =>
+    req<Ticket[]>(`/api/tickets/devices/${deviceId}/history`)
 }
 
 export type TechnicianUser = {
