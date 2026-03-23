@@ -293,111 +293,80 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete, curre
                 </div>
               )}
 
+              {ticket.status === 'UNRESOLVABLE' && ticket.unresolvableReason && (
+                <div>
+                  <p className='mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400'>
+                    Unresolvable reason
+                  </p>
+
+                  <div className='flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/10 dark:text-rose-300'>
+                    <FiAlertCircle className='mt-0.5 h-4 w-4 shrink-0' />
+                    <span>{ticket.unresolvableReason}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Assign Technician */}
-              <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-700'>
-                <div className='mb-3 flex items-center gap-2'>
-                  <FiUser className='h-4 w-4 text-slate-500' />
-                  <p className='text-sm font-semibold text-slate-800 dark:text-slate-200'>Assign Technician</p>
-                </div>
+              {(ticket.status === 'PENDING' || ticket.status === 'ASSIGNED') && (
+                <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-700'>
+                  <div className='mb-3 flex items-center gap-2'>
+                    <FiUser className='h-4 w-4 text-slate-500' />
+                    <p className='text-sm font-semibold text-slate-800 dark:text-slate-200'>Assign Technician</p>
+                  </div>
 
-                {currentTech && (
-                  <div className='mb-3 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs dark:bg-blue-500/10'>
-                    <div className='flex h-6 w-6 items-center justify-center rounded-full bg-blue-200 text-blue-700 dark:bg-blue-500/30 dark:text-blue-300'>
-                      {(currentTech.firstName?.[0] ?? currentTech.username[0]).toUpperCase()}
+                  {currentTech && (
+                    <div className='mb-3 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs dark:bg-blue-500/10'>
+                      <div className='flex h-6 w-6 items-center justify-center rounded-full bg-blue-200 text-blue-700 dark:bg-blue-500/30 dark:text-blue-300'>
+                        {(currentTech.firstName?.[0] ?? currentTech.username[0]).toUpperCase()}
+                      </div>
+                      <span className='font-medium text-blue-700 dark:text-blue-300'>
+                        Currently:{' '}
+                        {currentTech.firstName
+                          ? `${currentTech.firstName} ${currentTech.lastName ?? ''}`.trim()
+                          : currentTech.username}
+                      </span>
                     </div>
-                    <span className='font-medium text-blue-700 dark:text-blue-300'>
-                      Currently:{' '}
-                      {currentTech.firstName
-                        ? `${currentTech.firstName} ${currentTech.lastName ?? ''}`.trim()
-                        : currentTech.username}
-                    </span>
-                  </div>
-                )}
+                  )}
 
-                {assignError && (
-                  <div className='mb-3 flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-900/20 dark:text-rose-400'>
-                    <FiAlertCircle className='h-3.5 w-3.5 shrink-0' />
-                    {assignError}
-                  </div>
-                )}
+                  {assignError && (
+                    <div className='mb-3 flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700'>
+                      <FiAlertCircle className='h-3.5 w-3.5 shrink-0' />
+                      {assignError}
+                    </div>
+                  )}
 
-                {assignSuccess && (
-                  <div className='mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'>
-                    ✓ Technician assigned successfully
-                  </div>
-                )}
+                  {assignSuccess && (
+                    <div className='mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700'>
+                      ✓ Technician assigned successfully
+                    </div>
+                  )}
 
-                <div className='flex gap-2'>
-                  <div className='relative flex-1'>
-                    <select
-                      value={assignId}
-                      onChange={(e) => setAssignId(e.target.value)}
-                      className='w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 pr-9 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white'
+                  <div className='flex gap-2'>
+                    <div className='relative flex-1'>
+                      <select
+                        value={assignId}
+                        onChange={(e) => setAssignId(e.target.value)}
+                        className='w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 pr-9 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white'
+                      >
+                        <option value=''>Select technician</option>
+                        {technicians.map((tech) => (
+                          <option key={tech.id} value={tech.id}>
+                            {tech.firstName ? `${tech.firstName} ${tech.lastName ?? ''}`.trim() : tech.username}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={handleAssign}
+                      disabled={assignLoading}
+                      className='rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white'
                     >
-                      <option value=''>Select technician</option>
-                      {technicians.map((tech) => (
-                        <option key={tech.id} value={tech.id}>
-                          {tech.firstName ? `${tech.firstName} ${tech.lastName ?? ''}`.trim() : tech.username}
-                        </option>
-                      ))}
-                    </select>
-                    <FiChevronDown className='pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400' />
+                      {assignLoading ? 'Saving…' : 'Assign'}
+                    </button>
                   </div>
-                  <button
-                    onClick={handleAssign}
-                    disabled={assignLoading}
-                    className='rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60'
-                  >
-                    {assignLoading ? 'Saving…' : 'Assign'}
-                  </button>
                 </div>
-              </div>
-
-              {/* Update Status */}
-              <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-700'>
-                <p className='mb-3 text-sm font-semibold text-slate-800 dark:text-slate-200'>Update Status</p>
-
-                {statusError && (
-                  <div className='mb-3 flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-900/20 dark:text-rose-400'>
-                    <FiAlertCircle className='h-3.5 w-3.5 shrink-0' />
-                    {statusError}
-                  </div>
-                )}
-
-                <div className='relative'>
-                  <select
-                    value={nextStatus}
-                    onChange={(e) => setNextStatus(e.target.value as TicketStatus)}
-                    className='w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 pr-9 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white'
-                  >
-                    <option value=''>Select new status…</option>
-                    {availableStatuses.map((s) => (
-                      <option key={s} value={s}>
-                        {statusLabel[s]}
-                      </option>
-                    ))}
-                  </select>
-                  <FiChevronDown className='pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400' />
-                </div>
-
-                <button
-                  onClick={handleUpdateStatus}
-                  disabled={!nextStatus || statusLoading}
-                  className='mt-3 w-full rounded-lg bg-slate-800 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-60 dark:bg-slate-700 dark:hover:bg-slate-600'
-                >
-                  {statusLoading ? 'Saving…' : 'Save Status'}
-                </button>
-
-                {ticket.status === 'WAITING_FOR_CONFIRMATION' && (
-                  <button
-                    onClick={handleConfirmCompletion}
-                    disabled={statusLoading}
-                    className='mt-3 w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60'
-                  >
-                    {statusLoading ? 'Confirming…' : 'Confirm completion (Done)'}
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           )}
 

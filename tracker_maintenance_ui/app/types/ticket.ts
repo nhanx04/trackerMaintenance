@@ -42,6 +42,7 @@ export interface Ticket {
   scheduledDate?: string
   createdAt: string
   updatedAt: string
+  unresolvableReason?: string
 }
 
 export type TicketPage = PageResult<Ticket>

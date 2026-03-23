@@ -110,6 +110,39 @@ function ConfirmComplete({ ticket, loading, onClose, onConfirm }: ConfirmComplet
   )
 }
 
+function ConfirmUnresolvable({ ticket, loading, onClose, onConfirm }: any) {
+  const [reason, setReason] = useState('')
+
+  return (
+    <div className='fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm'>
+      <div className='w-full max-w-lg rounded-2xl border bg-white p-6 dark:bg-slate-900'>
+        <h3 className='text-base font-semibold'>Mark as Unresolvable?</h3>
+
+        <div className='mt-4'>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder='Nhập lý do...'
+            rows={3}
+            className='mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-rose-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white'
+          />
+        </div>
+
+        <div className='mt-4 flex justify-end gap-2'>
+          <button onClick={onClose}>Hủy</button>
+          <button
+            onClick={() => onConfirm(reason)}
+            disabled={!reason.trim() || loading}
+            className='bg-rose-600 px-4 py-2 text-white rounded'
+          >
+            Xác nhận
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Drawer ───────────────────────────────────────────────────────────────────
 
 type DrawerProps = {
@@ -125,8 +158,41 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
   const [statusLoading, setStatusLoading] = useState(false)
   const [statusError, setStatusError] = useState<string | null>(null)
   const [showCompletePopup, setShowCompletePopup] = useState(false)
+  const [showUnresolvablePopup, setShowUnresolvablePopup] = useState(false)
+  const [showAcceptPopup, setShowAcceptPopup] = useState(false)
 
   const availableNextStatuses = NEXT_STATUSES[ticket.status] ?? []
+
+  async function handleAcceptTicket() {
+    setStatusLoading(true)
+    try {
+      await ticketApi.accept(ticket.id)
+      setShowAcceptPopup(false)
+      onUpdated()
+      onClose()
+    } catch (e) {
+      setStatusError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setStatusLoading(false)
+    }
+  }
+
+  async function handleUnresolvable(reason: string) {
+    setStatusLoading(true)
+    setStatusError(null)
+
+    try {
+      await ticketApi.markAsUnresolvable(ticket.id, reason)
+
+      setShowUnresolvablePopup(false)
+      onUpdated()
+      onClose()
+    } catch (e) {
+      setStatusError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setStatusLoading(false)
+    }
+  }
 
   async function handleUpdateStatus() {
     if (!nextStatus) return
@@ -263,60 +329,55 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
                 </div>
               )}
 
-              <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-700'>
-                <p className='mb-3 text-sm font-semibold text-slate-800 dark:text-slate-200'>Update Status</p>
+              {ticket.status === 'UNRESOLVABLE' && ticket.unresolvableReason && (
+                <div>
+                  <p className='mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400'>
+                    Unresolvable reason
+                  </p>
 
-                {statusError && (
-                  <div className='mb-3 flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-900/20 dark:text-rose-400'>
-                    <FiAlertCircle className='h-3.5 w-3.5 shrink-0' />
-                    {statusError}
+                  <div className='flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/10 dark:text-rose-300'>
+                    <FiAlertCircle className='mt-0.5 h-4 w-4 shrink-0' />
+                    <span>{ticket.unresolvableReason}</span>
                   </div>
-                )}
+                </div>
+              )}
 
-                {availableNextStatuses.length > 0 && (
-                  <>
-                    <div className='relative'>
-                      <select
-                        value={nextStatus}
-                        onChange={(e) => setNextStatus(e.target.value as TicketStatus)}
-                        className='w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 pr-9 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white'
-                      >
-                        <option value=''>Select new status…</option>
-                        {availableNextStatuses.map((s) => (
-                          <option key={s} value={s}>
-                            {statusLabel[s]}
-                          </option>
-                        ))}
-                      </select>
-                      <FiChevronDown className='pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400' />
-                    </div>
+              {statusError && (
+                <div className='mb-3 flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-900/20 dark:text-rose-400'>
+                  <FiAlertCircle className='h-3.5 w-3.5 shrink-0' />
+                  {statusError}
+                </div>
+              )}
 
-                    <button
-                      onClick={handleUpdateStatus}
-                      disabled={!nextStatus || statusLoading}
-                      className='mt-3 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60'
-                    >
-                      {statusLoading ? 'Saving…' : 'Save Status'}
-                    </button>
-                  </>
-                )}
+              {ticket.status === 'ASSIGNED' && (
+                <button
+                  onClick={() => setShowAcceptPopup(true)}
+                  disabled={statusLoading}
+                  className='w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700'
+                >
+                  Get Ticket
+                </button>
+              )}
 
-                {ticket.status === 'IN_PROGRESS' && (
+              {ticket.status === 'IN_PROGRESS' && (
+                <div className='space-y-2'>
                   <button
                     onClick={() => setShowCompletePopup(true)}
                     disabled={statusLoading}
-                    className='w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60'
+                    className='w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700'
                   >
-                    {statusLoading ? 'Processing…' : 'Đánh dấu hoàn thành'}
+                    {statusLoading ? 'Processing…' : 'Mark as Completed'}
                   </button>
-                )}
 
-                {availableNextStatuses.length === 0 && ticket.status !== 'IN_PROGRESS' && (
-                  <p className='rounded-lg bg-slate-50 px-4 py-3 text-center text-sm text-slate-500 dark:bg-slate-800/70 dark:text-slate-400'>
-                    This ticket is already <strong>{statusLabel[ticket.status]}</strong> and cannot be updated further.
-                  </p>
-                )}
-              </div>
+                  <button
+                    onClick={() => setShowUnresolvablePopup(true)}
+                    disabled={statusLoading}
+                    className='w-full rounded-lg bg-rose-600 py-2.5 text-sm font-semibold text-white hover:bg-rose-700'
+                  >
+                    Mark as Unresolvable
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -333,6 +394,24 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
           loading={statusLoading}
           onClose={() => setShowCompletePopup(false)}
           onConfirm={handleCompleteTicket}
+        />
+      )}
+
+      {showUnresolvablePopup && (
+        <ConfirmUnresolvable
+          ticket={ticket}
+          loading={statusLoading}
+          onClose={() => setShowUnresolvablePopup(false)}
+          onConfirm={handleUnresolvable}
+        />
+      )}
+
+      {showAcceptPopup && (
+        <ConfirmAccept
+          ticket={ticket}
+          loading={statusLoading}
+          onClose={() => setShowAcceptPopup(false)}
+          onConfirm={handleAcceptTicket}
         />
       )}
     </>
@@ -369,7 +448,21 @@ export default function TechnicianMyTicketsPage() {
         size: PAGE_SIZE
       }
       const res = await ticketApi.getAll(filter)
-      setTickets(res.content.filter((t) => t.assignedTechnicianId === auth.id))
+      const statusOrder: Record<TicketStatus, number> = {
+        PENDING: 0,
+        ASSIGNED: 1,
+        IN_PROGRESS: 2,
+        WAITING_FOR_CONFIRMATION: 3,
+        DONE: 4,
+        UNRESOLVABLE: 5,
+        CANCELLED: 6
+      }
+
+      setTickets(
+        res.content
+          .filter((t) => t.assignedTechnicianId === auth.id)
+          .sort((a, b) => statusOrder[a.status] - statusOrder[b.status])
+      )
       setTotalPages(res.totalPages)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load tickets')
@@ -485,7 +578,6 @@ export default function TechnicianMyTicketsPage() {
             tickets={tickets}
             showAssignee={false}
             onView={(ticket) => setSelected(ticket)}
-            onAccept={(ticket) => setToAccept(ticket)}
             currentUserRole='TECHNICIAN'
             actionLabel='View Details'
           />
