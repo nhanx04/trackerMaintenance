@@ -15,6 +15,7 @@ type TicketTableProps = {
   onCancel?: (ticket: Ticket) => void
   onDelete?: (ticket: Ticket) => void
   onAccept?: (ticket: Ticket) => void
+  currentUserRole?: 'ADMIN' | 'MANAGER' | 'TECHNICIAN'
   centerViewOnly?: boolean
 }
 
@@ -35,6 +36,7 @@ export function TicketTable({
   onCancel,
   onDelete,
   onAccept,
+  currentUserRole,
   centerViewOnly = false
 }: TicketTableProps) {
   return (
@@ -130,14 +132,17 @@ export function TicketTable({
                           {actionLabel}
                         </button>
                       )}
-                      {onAccept && ticket.status === 'ASSIGNED' && (
-                        <button
-                          onClick={() => onAccept(ticket)}
-                          className='rounded-md px-2.5 py-1 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10'
-                        >
-                          Nhận
-                        </button>
-                      )}
+                      {onAccept &&
+                        ticket.status === 'ASSIGNED' &&
+                        currentUserRole !== 'MANAGER' &&
+                        currentUserRole !== 'ADMIN' && (
+                          <button
+                            onClick={() => onAccept(ticket)}
+                            className='rounded-md px-2.5 py-1 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10'
+                          >
+                            Get
+                          </button>
+                        )}
                       {onCancel && ticket.status === 'PENDING' && (
                         <button
                           onClick={() => onCancel(ticket)}

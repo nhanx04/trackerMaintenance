@@ -486,6 +486,7 @@ export default function TechnicianMyTicketsPage() {
             showAssignee={false}
             onView={(ticket) => setSelected(ticket)}
             onAccept={(ticket) => setToAccept(ticket)}
+            currentUserRole='TECHNICIAN'
             actionLabel='View Details'
           />
         )}

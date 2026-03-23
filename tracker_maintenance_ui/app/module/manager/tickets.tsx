@@ -121,9 +121,10 @@ type DrawerProps = {
   onClose: () => void
   onUpdated: () => void
   onDelete: (ticket: Ticket) => void
+  currentUserRole?: 'ADMIN' | 'MANAGER' | 'TECHNICIAN'
 }
 
-function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete }: DrawerProps) {
+function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete, currentUserRole }: DrawerProps) {
   const [tab, setTab] = useState<'detail' | 'progress' | 'images'>('detail')
 
   // Status
@@ -782,6 +783,7 @@ export default function ManagerTicketsPage() {
             onAccept={(t) => setToConfirm(t)}
             onCancel={handleCancel}
             actionLabel='Manage'
+            currentUserRole='MANAGER'
           />
         )}
 
@@ -837,6 +839,7 @@ export default function ManagerTicketsPage() {
             setToDelete(t)
             setSelected(null)
           }}
+          currentUserRole='MANAGER'
         />
       )}
 

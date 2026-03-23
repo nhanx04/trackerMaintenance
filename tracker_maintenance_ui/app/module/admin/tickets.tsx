@@ -719,6 +719,7 @@ export default function AdminTicketsPage() {
             onDelete={(t) => setToDelete(t)}
             onCancel={handleCancel}
             actionLabel='Manage'
+            currentUserRole='ADMIN'
           />
         )}
 
