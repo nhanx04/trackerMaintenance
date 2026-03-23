@@ -79,11 +79,21 @@ export const ticketApi = {
 
   delete: (id: string): Promise<void> => req<void>(`/api/tickets/${id}`, { method: 'DELETE' }),
 
+  confirmComplete: (id: string): Promise<Ticket> => req<Ticket>(`/api/tickets/${id}/confirm`, { method: 'POST' }),
+
+  markAsCompleted: (id: string): Promise<Ticket> => req<Ticket>(`/api/tickets/${id}/complete`, { method: 'POST' }),
+
   uploadImages: (ticketId: string, type: 'before' | 'after', files: File[]): Promise<TicketImage[]> => {
     const form = new FormData()
     files.forEach((f) => form.append('files', f))
     return reqForm<TicketImage[]>(`/api/tickets/${ticketId}/images/${type}`, form)
   },
+
+  assign: (id: string, technicianId: string): Promise<Ticket> =>
+    req<Ticket>(`/api/tickets/${id}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ technicianId: String(technicianId) })
+    }),
 
   getImages: (ticketId: string, type?: ImageType): Promise<TicketImage[]> => {
     const url = type ? `/api/tickets/${ticketId}/images?type=${type}` : `/api/tickets/${ticketId}/images`

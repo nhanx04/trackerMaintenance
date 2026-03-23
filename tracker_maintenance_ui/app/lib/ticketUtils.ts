@@ -3,15 +3,21 @@ import type { TicketStatus as BackendStatus, TicketPriority } from '@/types/tick
 // Map backend status → UI display label
 export const statusLabel: Record<BackendStatus, string> = {
   PENDING: 'New',
+  ASSIGNED: 'Assigned',
   IN_PROGRESS: 'In Progress',
+  WAITING_FOR_CONFIRMATION: 'Waiting Confirm',
+  UNRESOLVABLE: 'Cannot Resolve',
   DONE: 'Completed',
-  CANCELLED: 'Cannot Resolve'
+  CANCELLED: 'Cancelled'
 }
 
 // Map backend status → Tailwind badge style
 export const statusStyle: Record<BackendStatus, string> = {
   PENDING: 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/20 dark:text-blue-300',
+  ASSIGNED: 'bg-indigo-50 text-indigo-700 ring-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300',
   IN_PROGRESS: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/20 dark:text-amber-300',
+  WAITING_FOR_CONFIRMATION: 'bg-yellow-100 text-yellow-700 ring-yellow-600/20',
+  UNRESOLVABLE: 'bg-red-100 text-red-700 ring-red-200 dark:bg-red-500/20 dark:text-red-300',
   DONE: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300',
   CANCELLED: 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/20 dark:text-rose-300'
 }

@@ -15,7 +15,15 @@ import type { Equipment } from '@/types/equipment'
 import type { Ticket, TicketFilter, TicketPriority, TicketStatus, UpdateTicketRequest } from '@/types/ticket'
 
 const PAGE_SIZE = 10
-const ALL_STATUSES: TicketStatus[] = ['PENDING', 'IN_PROGRESS', 'DONE', 'CANCELLED']
+const ALL_STATUSES: TicketStatus[] = [
+  'PENDING',
+  'ASSIGNED',
+  'IN_PROGRESS',
+  'WAITING_FOR_CONFIRMATION',
+  'UNRESOLVABLE',
+  'DONE',
+  'CANCELLED'
+]
 
 // ─── Confirm Delete Dialog ────────────────────────────────────────────────────
 
@@ -147,13 +155,17 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete }: Dra
   }
 
   async function handleAssign() {
+    if (!assignId) {
+      setAssignError('Please select technician')
+      return
+    }
+
     setAssignLoading(true)
     setAssignError(null)
     setAssignSuccess(false)
+
     try {
-      await ticketApi.update(ticket.id, {
-        assignedTechnicianId: assignId === '' ? null : assignId
-      } as UpdateTicketRequest)
+      await ticketApi.assign(ticket.id, assignId)
       setAssignSuccess(true)
       setTimeout(() => setAssignSuccess(false), 2500)
       onUpdated()
@@ -391,6 +403,8 @@ export default function ManagerTicketsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [toCancel, setToCancel] = useState<Ticket | null>(null)
   const [cancelLoading, setCancelLoading] = useState(false)
+  const [toConfirm, setToConfirm] = useState<Ticket | null>(null)
+  const [confirmLoading, setConfirmLoading] = useState(false)
   const [imageToDelete, setImageToDelete] = useState<{
     ticketId: string
     imageId: string
@@ -470,6 +484,51 @@ export default function ManagerTicketsPage() {
     }
   }
 
+  async function confirmComplete() {
+    if (!toConfirm) return
+    setConfirmLoading(true)
+    try {
+      await ticketApi.confirmComplete(toConfirm.id)
+      setToConfirm(null)
+      fetchTickets(page)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to confirm completion')
+    } finally {
+      setConfirmLoading(false)
+    }
+  }
+
+  type ConfirmCompleteProps = {
+    ticket: Ticket
+    onConfirm: () => void
+    onClose: () => void
+    loading: boolean
+  }
+
+  function ConfirmComplete({ ticket, onConfirm, onClose, loading }: ConfirmCompleteProps) {
+    return (
+      <div className='fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm'>
+        <div className='w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-2xl dark:border-slate-700 dark:bg-slate-900'>
+          <h3 className='text-base font-semibold text-slate-900 dark:text-white'>Confirm Completion?</h3>
+
+          <p className='mt-2 text-sm text-slate-500'>
+            Ticket "<b>{ticket.title}</b>" will be marked as completed.
+          </p>
+
+          <div className='mt-6 flex justify-center gap-4'>
+            <button onClick={onClose} className='rounded-lg border px-4 py-2 text-sm'>
+              Cancel
+            </button>
+
+            <button onClick={onConfirm} disabled={loading} className='rounded-lg bg-green-600 px-4 py-2 text-white'>
+              {loading ? 'Confirming…' : 'Confirm'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   async function confirmDeleteImage() {
     if (!imageToDelete) return
 
@@ -527,7 +586,10 @@ export default function ManagerTicketsPage() {
 
   const counts = {
     PENDING: tickets.filter((t) => t.status === 'PENDING').length,
+    ASSIGNED: tickets.filter((t) => t.status === 'ASSIGNED').length,
     IN_PROGRESS: tickets.filter((t) => t.status === 'IN_PROGRESS').length,
+    WAITING_FOR_CONFIRMATION: tickets.filter((t) => t.status === 'WAITING_FOR_CONFIRMATION').length,
+    UNRESOLVABLE: tickets.filter((t) => t.status === 'UNRESOLVABLE').length,
     DONE: tickets.filter((t) => t.status === 'DONE').length,
     CANCELLED: tickets.filter((t) => t.status === 'CANCELLED').length
   }
@@ -609,7 +671,10 @@ export default function ManagerTicketsPage() {
         >
           <option value=''>All Status</option>
           <option value='PENDING'>Pending</option>
+          <option value='ASSIGNED'>Assigned</option>
           <option value='IN_PROGRESS'>In Progress</option>
+          <option value='WAITING_FOR_CONFIRMATION'>Waiting Confirm</option>
+          <option value='UNRESOLVABLE'>Cannot Resolve</option>
           <option value='DONE'>Done</option>
           <option value='CANCELLED'>Cancelled</option>
         </select>
@@ -688,6 +753,7 @@ export default function ManagerTicketsPage() {
             deviceLabelById={deviceLabelById}
             onView={(ticket) => setSelected(ticket)}
             onDelete={(t) => setToDelete(t)}
+            onConfirmComplete={(t) => setToConfirm(t)}
             onCancel={handleCancel}
             actionLabel='Manage'
           />
@@ -762,6 +828,14 @@ export default function ManagerTicketsPage() {
           onConfirm={confirmCancel}
           onClose={() => setToCancel(null)}
           loading={cancelLoading}
+        />
+      )}
+      {toConfirm && (
+        <ConfirmComplete
+          ticket={toConfirm}
+          onConfirm={confirmComplete}
+          onClose={() => setToConfirm(null)}
+          loading={confirmLoading}
         />
       )}
       {imageToDelete && (

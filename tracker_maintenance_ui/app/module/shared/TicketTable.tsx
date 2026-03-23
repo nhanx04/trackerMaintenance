@@ -14,6 +14,7 @@ type TicketTableProps = {
   actionStyle?: ActionStyle
   onCancel?: (ticket: Ticket) => void
   onDelete?: (ticket: Ticket) => void
+  onConfirmComplete?: (ticket: Ticket) => void
   centerViewOnly?: boolean
 }
 
@@ -33,6 +34,7 @@ export function TicketTable({
   actionStyle = 'blue',
   onCancel,
   onDelete,
+  onConfirmComplete,
   centerViewOnly = false
 }: TicketTableProps) {
   return (
@@ -46,7 +48,7 @@ export function TicketTable({
             <th className='pb-3 pr-4 font-semibold text-slate-600 dark:text-slate-400'>Device</th>
             {showAssignee && <th className='pb-3 pr-4 font-semibold text-slate-600 dark:text-slate-400'>Assignee</th>}
             <th className='pb-3 pr-4 font-semibold text-slate-600 dark:text-slate-400'>Created</th>
-            {(onView || onCancel || onDelete) && (
+            {(onView || onCancel || onDelete || onConfirmComplete) && (
               <th className='pb-3 pr-4 text-center font-semibold text-slate-600 dark:text-slate-400'>Actions</th>
             )}
           </tr>
@@ -113,7 +115,7 @@ export function TicketTable({
 
                 <td className='py-3 pr-4 text-xs text-slate-500 dark:text-slate-400'>{formatDate(ticket.createdAt)}</td>
 
-                {(onView || onCancel || onDelete) && (
+                {(onView || onCancel || onDelete || onConfirmComplete) && (
                   <td className='py-3'>
                     <div className='flex items-center gap-2'>
                       {onView && (
@@ -136,6 +138,16 @@ export function TicketTable({
                           Cancel
                         </button>
                       )}
+                      {onConfirmComplete &&
+                        ticket.status === 'WAITING_FOR_CONFIRMATION' &&
+                        ticket.assignedTechnicianId && (
+                          <button
+                            onClick={() => onConfirmComplete(ticket)}
+                            className='rounded-md px-2.5 py-1 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10'
+                          >
+                            Confirm
+                          </button>
+                        )}
                       {onDelete && (
                         <button
                           onClick={() => onDelete(ticket)}

@@ -14,8 +14,8 @@ import type { Ticket, TicketFilter, TicketPriority, TicketStatus, UpdateTicketRe
 const PAGE_SIZE = 10
 
 const NEXT_STATUSES: Partial<Record<TicketStatus, TicketStatus[]>> = {
-  PENDING: ['IN_PROGRESS'],
-  IN_PROGRESS: ['DONE']
+  ASSIGNED: ['IN_PROGRESS'],
+  IN_PROGRESS: ['WAITING_FOR_CONFIRMATION']
 }
 
 // ─── Drawer ───────────────────────────────────────────────────────────────────
@@ -37,13 +37,23 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
 
   async function handleUpdateStatus() {
     if (!nextStatus) return
+
     setStatusLoading(true)
     setStatusError(null)
+
     try {
-      await ticketApi.update(ticket.id, { status: nextStatus } as UpdateTicketRequest)
+      if (nextStatus === 'IN_PROGRESS') {
+        await ticketApi.update(ticket.id, { status: 'IN_PROGRESS' })
+      }
+
+      if (nextStatus === 'WAITING_FOR_CONFIRMATION') {
+        await ticketApi.markAsCompleted(ticket.id)
+      }
+
       onUpdated()
       onClose()
     } catch (e) {
+      console.error(e)
       setStatusError(e instanceof Error ? e.message : 'Failed to update status')
     } finally {
       setStatusLoading(false)
@@ -262,6 +272,7 @@ export default function TechnicianMyTicketsPage() {
         >
           <option value=''>All Status</option>
           <option value='PENDING'>Pending</option>
+          <option value='ASSIGNED'>Assigned</option>
           <option value='IN_PROGRESS'>In Progress</option>
           <option value='DONE'>Done</option>
           <option value='CANCELLED'>Cancelled</option>
