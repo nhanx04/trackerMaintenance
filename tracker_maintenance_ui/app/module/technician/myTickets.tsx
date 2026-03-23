@@ -5,6 +5,7 @@ import { AppLayout } from '@/layouts/AppLayout'
 import { PageHeader } from '@/components/ui-custom/PageHeader'
 import { TicketTable } from '@/module/shared/TicketTable'
 import { TicketImageUpload } from '@/module/shared/TicketImageUpload'
+import { TicketProgressPanel } from '@/module/shared/TicketProgressPanel'
 import { ticketApi } from '@/lib/ticketApi'
 import { getAuth } from '@/lib/auth'
 import { cn } from '@/lib/cn'
@@ -14,8 +15,7 @@ import type { Ticket, TicketFilter, TicketPriority, TicketStatus, UpdateTicketRe
 const PAGE_SIZE = 10
 
 const NEXT_STATUSES: Partial<Record<TicketStatus, TicketStatus[]>> = {
-  ASSIGNED: ['IN_PROGRESS'],
-  IN_PROGRESS: ['DONE']
+  ASSIGNED: ['IN_PROGRESS']
 }
 
 type ConfirmAcceptProps = {
@@ -57,6 +57,58 @@ function ConfirmAccept({ ticket, onConfirm, onClose, loading }: ConfirmAcceptPro
   )
 }
 
+type ConfirmCompleteProps = {
+  ticket: Ticket
+  loading: boolean
+  onClose: () => void
+  onConfirm: (files: File[]) => void
+}
+
+function ConfirmComplete({ ticket, loading, onClose, onConfirm }: ConfirmCompleteProps) {
+  const [files, setFiles] = useState<File[]>([])
+
+  return (
+    <div className='fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm'>
+      <div className='w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900'>
+        <h3 className='text-base font-semibold text-slate-900 dark:text-white'>Đánh dấu hoàn thành ticket?</h3>
+        <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>
+          Ticket: <span className='font-medium text-slate-700 dark:text-slate-300'>{ticket.title}</span>
+        </p>
+
+        <label className='mt-4 block text-xs font-medium text-slate-500 dark:text-slate-400'>
+          Upload ảnh AFTER (không bắt buộc)
+        </label>
+        <input
+          type='file'
+          multiple
+          accept='image/*'
+          onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+          className='mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
+        />
+        {files.length > 0 && (
+          <p className='mt-2 text-xs text-slate-500 dark:text-slate-400'>{files.length} file(s) selected</p>
+        )}
+
+        <div className='mt-6 flex justify-end gap-3'>
+          <button
+            onClick={onClose}
+            className='rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
+          >
+            Huỷ
+          </button>
+          <button
+            onClick={() => onConfirm(files)}
+            disabled={loading}
+            className='rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60'
+          >
+            {loading ? 'Đang xử lý…' : 'Xác nhận hoàn thành'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Drawer ───────────────────────────────────────────────────────────────────
 
 type DrawerProps = {
@@ -66,11 +118,12 @@ type DrawerProps = {
 }
 
 function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
-  const [tab, setTab] = useState<'detail' | 'images'>('detail')
+  const [tab, setTab] = useState<'detail' | 'progress' | 'images'>('detail')
 
   const [nextStatus, setNextStatus] = useState<TicketStatus | ''>('')
   const [statusLoading, setStatusLoading] = useState(false)
   const [statusError, setStatusError] = useState<string | null>(null)
+  const [showCompletePopup, setShowCompletePopup] = useState(false)
 
   const availableNextStatuses = NEXT_STATUSES[ticket.status] ?? []
 
@@ -84,6 +137,24 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
       onClose()
     } catch (e) {
       setStatusError(e instanceof Error ? e.message : 'Failed to update status')
+    } finally {
+      setStatusLoading(false)
+    }
+  }
+
+  async function handleCompleteTicket(files: File[]) {
+    setStatusLoading(true)
+    setStatusError(null)
+    try {
+      if (files.length > 0) {
+        await ticketApi.uploadImages(ticket.id, 'after', files)
+      }
+      await ticketApi.markAsCompleted(ticket.id)
+      setShowCompletePopup(false)
+      onUpdated()
+      onClose()
+    } catch (e) {
+      setStatusError(e instanceof Error ? e.message : 'Failed to complete ticket')
     } finally {
       setStatusLoading(false)
     }
@@ -107,7 +178,7 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
 
         {/* Tabs */}
         <div className='flex border-b border-slate-200 dark:border-slate-700'>
-          {(['detail', 'images'] as const).map((t) => (
+          {(['detail', 'progress', 'images'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -118,7 +189,7 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
                   : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
               )}
             >
-              {t === 'images' ? 'Before / After' : 'Details'}
+              {t === 'images' ? 'Before / After' : t === 'progress' ? 'Progress' : 'Details'}
             </button>
           ))}
         </div>
@@ -181,55 +252,78 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
                 </div>
               )}
 
-              {availableNextStatuses.length > 0 && (
-                <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-700'>
-                  <p className='mb-3 text-sm font-semibold text-slate-800 dark:text-slate-200'>Update Status</p>
+              <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-700'>
+                <p className='mb-3 text-sm font-semibold text-slate-800 dark:text-slate-200'>Update Status</p>
 
-                  {statusError && (
-                    <div className='mb-3 flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-900/20 dark:text-rose-400'>
-                      <FiAlertCircle className='h-3.5 w-3.5 shrink-0' />
-                      {statusError}
-                    </div>
-                  )}
-
-                  <div className='relative'>
-                    <select
-                      value={nextStatus}
-                      onChange={(e) => setNextStatus(e.target.value as TicketStatus)}
-                      className='w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 pr-9 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white'
-                    >
-                      <option value=''>Select new status…</option>
-                      {availableNextStatuses.map((s) => (
-                        <option key={s} value={s}>
-                          {statusLabel[s]}
-                        </option>
-                      ))}
-                    </select>
-                    <FiChevronDown className='pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400' />
+                {statusError && (
+                  <div className='mb-3 flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-900/20 dark:text-rose-400'>
+                    <FiAlertCircle className='h-3.5 w-3.5 shrink-0' />
+                    {statusError}
                   </div>
+                )}
 
+                {availableNextStatuses.length > 0 && (
+                  <>
+                    <div className='relative'>
+                      <select
+                        value={nextStatus}
+                        onChange={(e) => setNextStatus(e.target.value as TicketStatus)}
+                        className='w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 pr-9 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white'
+                      >
+                        <option value=''>Select new status…</option>
+                        {availableNextStatuses.map((s) => (
+                          <option key={s} value={s}>
+                            {statusLabel[s]}
+                          </option>
+                        ))}
+                      </select>
+                      <FiChevronDown className='pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400' />
+                    </div>
+
+                    <button
+                      onClick={handleUpdateStatus}
+                      disabled={!nextStatus || statusLoading}
+                      className='mt-3 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60'
+                    >
+                      {statusLoading ? 'Saving…' : 'Save Status'}
+                    </button>
+                  </>
+                )}
+
+                {ticket.status === 'IN_PROGRESS' && (
                   <button
-                    onClick={handleUpdateStatus}
-                    disabled={!nextStatus || statusLoading}
-                    className='mt-3 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60'
+                    onClick={() => setShowCompletePopup(true)}
+                    disabled={statusLoading}
+                    className='w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60'
                   >
-                    {statusLoading ? 'Saving…' : 'Save Status'}
+                    {statusLoading ? 'Processing…' : 'Đánh dấu hoàn thành'}
                   </button>
-                </div>
-              )}
+                )}
 
-              {availableNextStatuses.length === 0 && (
-                <p className='rounded-lg bg-slate-50 px-4 py-3 text-center text-sm text-slate-500 dark:bg-slate-800/70 dark:text-slate-400'>
-                  This ticket is already <strong>{statusLabel[ticket.status]}</strong> and cannot be updated further.
-                </p>
-              )}
+                {availableNextStatuses.length === 0 && ticket.status !== 'IN_PROGRESS' && (
+                  <p className='rounded-lg bg-slate-50 px-4 py-3 text-center text-sm text-slate-500 dark:bg-slate-800/70 dark:text-slate-400'>
+                    This ticket is already <strong>{statusLabel[ticket.status]}</strong> and cannot be updated further.
+                  </p>
+                )}
+              </div>
             </div>
           )}
+
+          {tab === 'progress' && <TicketProgressPanel ticketId={ticket.id} ticketStatus={ticket.status} allowCreate />}
 
           {/* ── Images tab — replaced with shared component ── */}
           {tab === 'images' && <TicketImageUpload ticketId={ticket.id} allowedTypes={['after']} />}
         </div>
       </aside>
+
+      {showCompletePopup && (
+        <ConfirmComplete
+          ticket={ticket}
+          loading={statusLoading}
+          onClose={() => setShowCompletePopup(false)}
+          onConfirm={handleCompleteTicket}
+        />
+      )}
     </>
   )
 }

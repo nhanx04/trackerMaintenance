@@ -15,8 +15,8 @@ import { TicketTable } from '@/module/shared/TicketTable'
 
 import { ticketApi } from '@/lib/ticketApi'
 import { getAuth } from '@/lib/auth'
-import { TicketImageUpload } from '../shared/TicketImageUpload'
 import { TicketImageViewer } from '../shared/TicketImageViewer'
+import { TicketProgressPanel } from '../shared/TicketProgressPanel'
 
 const NEXT_STATUSES: Partial<Record<TicketStatus, TicketStatus[]>> = {
   PENDING: ['IN_PROGRESS'],
@@ -33,7 +33,7 @@ type DrawerProps = {
 }
 
 function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
-  const [tab, setTab] = useState<'detail' | 'images'>('detail')
+  const [tab, setTab] = useState<'detail' | 'progress' | 'images'>('detail')
 
   const [nextStatus, setNextStatus] = useState<TicketStatus | ''>('')
   const [statusLoading, setStatusLoading] = useState(false)
@@ -74,7 +74,7 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
 
         {/* Tabs */}
         <div className='flex border-b border-slate-200 dark:border-slate-700'>
-          {(['detail', 'images'] as const).map((t) => (
+          {(['detail', 'progress', 'images'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -85,7 +85,7 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
                   : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
               )}
             >
-              {t === 'images' ? 'Before / After' : 'Details'}
+              {t === 'images' ? 'Before / After' : t === 'progress' ? 'Progress' : 'Details'}
             </button>
           ))}
         </div>
@@ -155,6 +155,8 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
               )}
             </div>
           )}
+
+          {tab === 'progress' && <TicketProgressPanel ticketId={ticket.id} ticketStatus={ticket.status} />}
 
           {/* ── Images tab — replaced with shared component ── */}
           {tab === 'images' && <TicketImageViewer ticketId={ticket.id} />}

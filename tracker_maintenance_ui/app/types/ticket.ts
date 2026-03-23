@@ -20,6 +20,16 @@ export interface TicketImage {
   uploadedAt: string
 }
 
+export interface TicketProgress {
+  id: string
+  ticketId: string
+  technicianId: string
+  note: string
+  createdAt: string
+  updatedAt: string
+  images: TicketImage[]
+}
+
 export interface Ticket {
   id: string
   title: string
