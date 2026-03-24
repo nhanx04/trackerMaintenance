@@ -74,6 +74,7 @@ public class SecurityConfig {
                 corsConfiguration.addAllowedOrigin("http://127.0.0.1:3000");
                 corsConfiguration.addAllowedOrigin("http://20.2.85.225.nip.io");
                 corsConfiguration.addAllowedOrigin("http://20.2.85.225");
+                corsConfiguration.addAllowedOriginPattern("https://*.vercel.app");
                 corsConfiguration.addAllowedMethod("*");
                 corsConfiguration.addAllowedHeader("*");
                 corsConfiguration.setAllowCredentials(true);
