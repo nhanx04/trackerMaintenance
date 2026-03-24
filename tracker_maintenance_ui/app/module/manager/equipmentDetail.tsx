@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { FiActivity, FiInfo } from 'react-icons/fi'
+import { FiClock, FiInfo } from 'react-icons/fi'
 import { cn } from '@/lib/cn'
 
 import { AppLayout } from '@/layouts/AppLayout'
@@ -16,7 +16,7 @@ type Tab = 'info' | 'history'
 
 const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'info', label: 'Equipment Info', icon: FiInfo },
-  { id: 'history', label: 'Maintenance History', icon: FiActivity }
+  { id: 'history', label: 'Maintenance History', icon: FiClock }
 ]
 
 export default function EquipmentDetailPage() {

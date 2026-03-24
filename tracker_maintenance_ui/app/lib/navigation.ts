@@ -1,6 +1,6 @@
 import {
-  FiActivity,
   FiBarChart2,
+  FiClock,
   FiClipboard,
   FiGrid,
   FiHardDrive,
@@ -23,7 +23,7 @@ export const roleMenu: Record<UserRole, NavItem[]> = {
     { label: 'Dashboard', path: '/manager/dashboard', icon: FiGrid },
     { label: 'Equipment', path: '/manager/equipment', icon: FiHardDrive },
     { label: 'Tickets', path: '/manager/tickets', icon: FiClipboard },
-    { label: 'Maintenance History', path: '/manager/history', icon: FiActivity },
+    { label: 'Maintenance History', path: '/manager/history', icon: FiClock },
     { label: 'Reports', path: '/manager/reports', icon: FiBarChart2 }
   ],
   Technician: [
