@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FiAlertCircle, FiCheckCircle, FiChevronDown, FiX } from 'react-icons/fi'
+import { FiAlertTriangle, FiCheckCircle, FiChevronDown, FiX } from 'react-icons/fi'
 
 import { AppLayout } from '@/layouts/AppLayout'
 import { PageHeader } from '@/components/ui-custom/PageHeader'
@@ -336,7 +336,7 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
                   </p>
 
                   <div className='flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/10 dark:text-rose-300'>
-                    <FiAlertCircle className='mt-0.5 h-4 w-4 shrink-0' />
+                    <FiAlertTriangle className='mt-0.5 h-4 w-4 shrink-0' />
                     <span>{ticket.unresolvableReason}</span>
                   </div>
                 </div>
@@ -344,7 +344,7 @@ function TicketDrawer({ ticket, onClose, onUpdated }: DrawerProps) {
 
               {statusError && (
                 <div className='mb-3 flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-900/20 dark:text-rose-400'>
-                  <FiAlertCircle className='h-3.5 w-3.5 shrink-0' />
+                  <FiAlertTriangle className='h-3.5 w-3.5 shrink-0' />
                   {statusError}
                 </div>
               )}
@@ -548,7 +548,7 @@ export default function TechnicianMyTicketsPage() {
 
       {error && (
         <div className='mb-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-400'>
-          <FiAlertCircle className='h-4 w-4 shrink-0' />
+          <FiAlertTriangle className='h-4 w-4 shrink-0' />
           {error}
         </div>
       )}

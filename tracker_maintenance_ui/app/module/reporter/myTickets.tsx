@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FiPlus } from 'react-icons/fi'
 import { Link } from 'react-router'
-import { FiAlertCircle, FiChevronDown, FiX } from 'react-icons/fi'
+import { FiAlertTriangle, FiChevronDown, FiX } from 'react-icons/fi'
 
 import { cn } from '@/lib/cn'
 import { formatDate, priorityLabel, priorityStyle, statusLabel, statusStyle } from '@/lib/ticketUtils'

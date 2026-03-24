@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FiAlertCircle } from 'react-icons/fi'
+import { FiAlertTriangle } from 'react-icons/fi'
 
 import { AppLayout } from '@/layouts/AppLayout'
 import { PageHeader } from '@/components/ui-custom/PageHeader'
@@ -86,7 +86,7 @@ export default function TechnicianAvailableTicketsPage() {
 
       {error && (
         <div className='mb-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-400'>
-          <FiAlertCircle className='h-4 w-4 shrink-0' />
+          <FiAlertTriangle className='h-4 w-4 shrink-0' />
           {error}
         </div>
       )}

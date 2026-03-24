@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FiAlertCircle, FiChevronDown, FiPlus, FiTrash2, FiUser, FiX } from 'react-icons/fi'
+import { FiAlertTriangle, FiChevronDown, FiPlus, FiTrash2, FiUser, FiX } from 'react-icons/fi'
 import { Link } from 'react-router'
 
 import { AppLayout } from '@/layouts/AppLayout'
@@ -84,7 +84,7 @@ function ConfirmCancel({ ticket, onConfirm, onClose, loading }: ConfirmCancelPro
         {' '}
         <div className='mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/20'>
           {' '}
-          <FiAlertCircle className='h-5 w-5 text-amber-600 dark:text-amber-400' />
+          <FiAlertTriangle className='h-5 w-5 text-amber-600 dark:text-amber-400' />
         </div>
         <h3 className='mt-3 text-base font-semibold text-slate-900 dark:text-white'>Cancel Ticket?</h3>
         <p className='mt-1 text-sm text-slate-500 dark:text-slate-400 text-center'>
@@ -300,7 +300,7 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete, curre
                   </p>
 
                   <div className='flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/10 dark:text-rose-300'>
-                    <FiAlertCircle className='mt-0.5 h-4 w-4 shrink-0' />
+                    <FiAlertTriangle className='mt-0.5 h-4 w-4 shrink-0' />
                     <span>{ticket.unresolvableReason}</span>
                   </div>
                 </div>
@@ -330,7 +330,7 @@ function TicketDrawer({ ticket, technicians, onClose, onUpdated, onDelete, curre
 
                   {assignError && (
                     <div className='mb-3 flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700'>
-                      <FiAlertCircle className='h-3.5 w-3.5 shrink-0' />
+                      <FiAlertTriangle className='h-3.5 w-3.5 shrink-0' />
                       {assignError}
                     </div>
                   )}
@@ -713,7 +713,7 @@ export default function ManagerTicketsPage() {
 
       {error && (
         <div className='mb-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-400'>
-          <FiAlertCircle className='h-4 w-4 shrink-0' />
+          <FiAlertTriangle className='h-4 w-4 shrink-0' />
           {error}
         </div>
       )}
