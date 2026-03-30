@@ -10,8 +10,11 @@ import com.procare_system.tracker_maintenance_service.entity.Ticket;
 import com.procare_system.tracker_maintenance_service.entity.TicketImage;
 import com.procare_system.tracker_maintenance_service.entity.TicketProgress;
 import com.procare_system.tracker_maintenance_service.enums.ImageType;
+import com.procare_system.tracker_maintenance_service.enums.Role;
 import com.procare_system.tracker_maintenance_service.enums.TicketPriority;
 import com.procare_system.tracker_maintenance_service.enums.TicketStatus;
+import com.procare_system.tracker_maintenance_service.event.TicketNotificationEvent;
+import com.procare_system.tracker_maintenance_service.enums.NotificationType;
 import com.procare_system.tracker_maintenance_service.exception.AppException;
 import com.procare_system.tracker_maintenance_service.exception.ErrorCode;
 import com.procare_system.tracker_maintenance_service.mapper.TicketMapper;
@@ -25,6 +28,7 @@ import jakarta.persistence.criteria.Predicate;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -53,7 +57,28 @@ public class TicketService {
     TicketProgressRepository ticketProgressRepository;
     TicketProgressMapper ticketProgressMapper;
     TicketImageService ticketImageService;
-    TicketImageRepository  ticketImageRepository;
+    TicketImageRepository ticketImageRepository;
+
+    ApplicationEventPublisher eventPublisher;
+
+    // --- HELPER METHODS CHO NOTIFICATION --- //
+
+    // Gửi cho 1 người cụ thể
+    private void notifyUser(String recipientId, String title, String message, NotificationType type, String ticketId) {
+        if (StringUtils.hasText(recipientId) && !recipientId.equals(currentUserId())) {
+            eventPublisher.publishEvent(new TicketNotificationEvent(recipientId, title, message, type, ticketId));
+        }
+    }
+
+    // Gửi cho tất cả Manager
+    private void notifyManagers(String title, String message, NotificationType type, String ticketId) {
+        // Cần thêm hàm findIdsByRoles trong UserRepository
+        List<String> managerIds = userRepository.findIdsByRole(Role.MANAGER);
+        for (String managerId : managerIds) {
+            notifyUser(managerId, title, message, type, ticketId);
+        }
+    }
+
 
     //  Helper: lấy thông tin user
     private Authentication currentAuth() {
@@ -61,22 +86,13 @@ public class TicketService {
     }
 
     private String currentUserId() {
-
-        Authentication authentication = SecurityContextHolder
-                .getContext()
-                .getAuthentication();
-
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
-
-            // Lấy username từ JWT (sub)
             String username = jwtAuth.getName();
-
-            // Tìm user trong DB
             return userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found: " + username))
                     .getId();
         }
-
         throw new RuntimeException("Unauthenticated");
     }
 
@@ -103,12 +119,22 @@ public class TicketService {
         }
     }
 
+    @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'REPORTER')")
     public TicketResponse createTicket(CreateTicketRequest request) {
         Ticket ticket = ticketMapper.toTicket(request);
         ticket.setStatus(TicketStatus.PENDING);
         ticket.setCreatedByUserId(currentUserId());
-        ticketRepository.save(ticket);
+        ticket = ticketRepository.save(ticket); // Gán lại để lấy ID
+
+        // 👇 TRIGGER: Reporter tạo ticket -> Báo cho Manager
+        notifyManagers(
+                "Ticket mới yêu cầu xử lý",
+                "Một ticket mới (" + ticket.getTitle() + ") vừa được tạo.",
+                NotificationType.CREATE_TICKET,
+                ticket.getId()
+        );
+
         return ticketMapper.toTicketResponse(ticket);
     }
 
@@ -118,30 +144,21 @@ public class TicketService {
         return ticketMapper.toTicketResponse(ticket);
     }
 
-
-    public Page<TicketResponse> getTickets(
-            String title, TicketStatus status, TicketPriority priority,
-            String deviceId, int page, int size) {
-
+    public Page<TicketResponse> getTickets(String title, TicketStatus status, TicketPriority priority, String deviceId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         Specification<Ticket> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-
             predicates.add(cb.equal(root.get("isDeleted"), false));
 
             if (hasRole("TECHNICIAN")) {
-                // Technician chỉ thấy ticket được assign cho mình
                 predicates.add(cb.equal(root.get("assignedTechnicianId"), currentUserId()));
             } else if (hasRole("REPORTER")) {
-                // Reporter chỉ thấy ticket mình tạo
                 predicates.add(cb.equal(root.get("createdByUserId"), currentUserId()));
             }
-            // ADMIN/MANAGER thấy tất cả → không thêm predicate
 
             if (StringUtils.hasText(title)) {
-                predicates.add(cb.like(cb.lower(root.get("title")),
-                        "%" + title.toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("title")), "%" + title.toLowerCase() + "%"));
             }
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
@@ -152,14 +169,11 @@ public class TicketService {
             if (StringUtils.hasText(deviceId)) {
                 predicates.add(cb.equal(root.get("deviceId"), deviceId));
             }
-
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        return ticketRepository.findAll(spec, pageable)
-                .map(ticketMapper::toTicketResponse);
+        return ticketRepository.findAll(spec, pageable).map(ticketMapper::toTicketResponse);
     }
-
 
     public TicketStatus checkStatus(String id) {
         Ticket ticket = findActiveTicket(id);
@@ -167,16 +181,14 @@ public class TicketService {
         return ticket.getStatus();
     }
 
-
+    @Transactional
     public TicketResponse updateTicket(String id, UpdateTicketRequest request) {
         Ticket ticket = findActiveTicket(id);
 
         if (!isAdminOrManager()) {
             if (hasRole("TECHNICIAN")) {
-                // Technician chỉ được cập nhật status của ticket mình
                 if (!currentUserId().equals(ticket.getAssignedTechnicianId()))
                     throw new AppException(ErrorCode.ACCESS_DENIED);
-                // Technician chỉ được phép đổi status, không cho sửa field khác
                 request.setTitle(null);
                 request.setDescription(null);
                 request.setPriority(null);
@@ -196,23 +208,19 @@ public class TicketService {
         return ticketMapper.toTicketResponse(ticket);
     }
 
-
+    @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public TicketResponse cancelTicket(String id) {
         Ticket ticket = findActiveTicket(id);
-
-        if (ticket.getStatus() == TicketStatus.CANCELLED)
-            throw new AppException(ErrorCode.TICKET_ALREADY_CANCELLED);
-
-        if (ticket.getStatus() == TicketStatus.DONE)
-            throw new AppException(ErrorCode.TICKET_CANNOT_CANCEL);
+        if (ticket.getStatus() == TicketStatus.CANCELLED) throw new AppException(ErrorCode.TICKET_ALREADY_CANCELLED);
+        if (ticket.getStatus() == TicketStatus.DONE) throw new AppException(ErrorCode.TICKET_CANNOT_CANCEL);
 
         ticket.setStatus(TicketStatus.CANCELLED);
         ticketRepository.save(ticket);
         return ticketMapper.toTicketResponse(ticket);
     }
 
-
+    @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public void deleteTicket(String id) {
         Ticket ticket = findActiveTicket(id);
@@ -230,6 +238,15 @@ public class TicketService {
         ticket.setStatus(TicketStatus.ASSIGNED);
         ticketRepository.save(ticket);
 
+        // 👇 TRIGGER: Manager assign -> Báo cho Technician
+        notifyUser(
+                request.getTechnicianId(),
+                "Bạn được phân công Ticket mới",
+                "Bạn vừa được giao xử lý ticket: " + ticket.getTitle(),
+                NotificationType.ASSIGN_TECHNICIAN,
+                ticket.getId()
+        );
+
         return ticketMapper.toTicketResponse(ticket);
     }
 
@@ -246,6 +263,14 @@ public class TicketService {
         ticket.setStatus(TicketStatus.IN_PROGRESS);
         ticketRepository.save(ticket);
 
+        // 👇 TRIGGER: Technician nhận ticket -> Báo cho Manager
+        notifyManagers(
+                "Technician đã tiếp nhận Ticket",
+                "Technician đã bắt đầu xử lý ticket: " + ticket.getTitle(),
+                NotificationType.ACCEPT_TICKET,
+                ticket.getId()
+        );
+
         return ticketMapper.toTicketResponse(ticket);
     }
 
@@ -257,7 +282,6 @@ public class TicketService {
         if (!currentUserId().equals(ticket.getAssignedTechnicianId())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
-
         if (ticket.getStatus() != TicketStatus.IN_PROGRESS) {
             throw new AppException(ErrorCode.TICKET_INVALID_STATUS_TRANSITION);
         }
@@ -269,18 +293,15 @@ public class TicketService {
                 .build();
         progress = ticketProgressRepository.save(progress);
 
-        //Set ảnh cho progess
         List<TicketImageResponse> imageResponses = new ArrayList<>();
-
         if (files != null && !files.isEmpty()) {
             imageResponses = ticketImageService.saveProgressImages(ticket, String.valueOf(progress.getId()), files);
         }
 
-        ticketRepository.save(ticket); // update timestamp của ticket
+        ticketRepository.save(ticket);
 
         TicketProgressResponse response = ticketProgressMapper.toTicketProgressResponse(progress);
         response.setImages(imageResponses);
-
         return response;
     }
 
@@ -289,12 +310,10 @@ public class TicketService {
         List<TicketProgress> progresses = ticketProgressRepository.findByTicketIdOrderByCreatedAtDesc(ticketId);
         List<TicketImage> allProgressImages = ticketImageRepository.findAllByTicketIdAndImageType(ticketId, ImageType.PROGRESS);
 
-        // Map các ảnh của ticket progress theo progress ID
         Map<String, List<TicketImage>> imagesByProgressId = allProgressImages.stream()
                 .filter(img -> img.getTicketProgressId() != null)
                 .collect(Collectors.groupingBy(TicketImage::getTicketProgressId));
 
-        // 4. Map sang Response theo progressID và gán ảnh tương ứng
         return progresses.stream().map(progress -> {
             TicketProgressResponse response = ticketProgressMapper.toTicketProgressResponse(progress);
             List<TicketImage> matchedImages = imagesByProgressId.getOrDefault(progress.getId(), new ArrayList<>());
@@ -314,22 +333,20 @@ public class TicketService {
             return response;
         }).toList();
     }
+
     @Transactional
     @PreAuthorize("hasRole('TECHNICIAN')")
     public TicketProgressResponse updateProgressNote(String ticketId, String progressId, String newNote) {
         Ticket ticket = findActiveTicket(ticketId);
-
         if (ticket.getStatus() != TicketStatus.IN_PROGRESS) {
             throw new AppException(ErrorCode.TICKET_INVALID_STATUS_TRANSITION);
         }
-
         TicketProgress progress = ticketProgressRepository.findById(progressId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROGRESS_NOT_FOUND));
 
         if (!progress.getTechnicianId().equals(currentUserId())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
-
         progress.setNote(newNote);
         ticketProgressRepository.save(progress);
         return ticketProgressMapper.toTicketProgressResponse(progress);
@@ -339,20 +356,16 @@ public class TicketService {
     @PreAuthorize("hasRole('TECHNICIAN')")
     public void deleteProgress(String ticketId, String progressId) {
         Ticket ticket = findActiveTicket(ticketId);
-
         if (ticket.getStatus() != TicketStatus.IN_PROGRESS) {
             throw new AppException(ErrorCode.TICKET_INVALID_STATUS_TRANSITION);
         }
-
         TicketProgress progress = ticketProgressRepository.findById(progressId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROGRESS_NOT_FOUND));
 
         if (!progress.getTechnicianId().equals(currentUserId())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
-
         ticketImageService.deleteAllImagesByProgressId(ticketId, progressId);
-
         ticketProgressRepository.delete(progress);
     }
 
@@ -369,6 +382,14 @@ public class TicketService {
         ticket.setStatus(TicketStatus.WAITING_FOR_CONFIRMATION);
         ticketRepository.save(ticket);
 
+        // 👇 TRIGGER: Technician hoàn tất -> Báo cho Manager
+        notifyManagers(
+                "Ticket đã hoàn tất, chờ xác nhận",
+                "Technician đã hoàn thành ticket: " + ticket.getTitle() + ". Vui lòng kiểm tra và xác nhận.",
+                NotificationType.COMPLETE_TICKET,
+                ticket.getId()
+        );
+
         return ticketMapper.toTicketResponse(ticket);
     }
 
@@ -380,16 +401,21 @@ public class TicketService {
         if (!currentUserId().equals(ticket.getAssignedTechnicianId())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
-
         if (ticket.getStatus() != TicketStatus.IN_PROGRESS) {
             throw new AppException(ErrorCode.TICKET_INVALID_STATUS_TRANSITION);
         }
 
         ticket.setStatus(TicketStatus.UNRESOLVABLE);
         ticket.setUnresolvableReason(reason);
-        System.out.println("Before save: " + ticket.getUnresolvableReason()); // phải có giá trị
         ticketRepository.save(ticket);
-        System.out.println("After save: " + ticket.getUnresolvableReason());  // có bị reset không?
+
+        // 👇 TRIGGER: Technician báo lỗi -> Báo cho Manager
+        notifyManagers(
+                "Sự cố không thể xử lý",
+                "Technician báo cáo không thể xử lý ticket: " + ticket.getTitle() + ". Lý do: " + reason,
+                NotificationType.CANNOT_FIX,
+                ticket.getId()
+        );
 
         return ticketMapper.toTicketResponse(ticket);
     }
@@ -407,6 +433,15 @@ public class TicketService {
         ticket.setConfirmedByUserId(currentUserId());
         ticketRepository.saveAndFlush(ticket);
 
+        // 👇 TRIGGER: Manager xác nhận -> Báo cho Reporter
+        notifyUser(
+                ticket.getCreatedByUserId(),
+                "Ticket đã hoàn tất",
+                "Yêu cầu hỗ trợ của bạn (" + ticket.getTitle() + ") đã được giải quyết xong.",
+                NotificationType.CONFIRM_COMPLETION,
+                ticket.getId()
+        );
+
         return ticketMapper.toTicketResponse(ticket);
     }
 
@@ -419,8 +454,6 @@ public class TicketService {
                 .map(ticketMapper::toTicketResponse)
                 .toList();
     }
-
-
 
     private Ticket findActiveTicket(String id) {
         return ticketRepository.findById(id)
