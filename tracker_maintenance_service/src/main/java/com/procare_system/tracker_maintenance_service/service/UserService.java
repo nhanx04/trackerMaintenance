@@ -45,7 +45,7 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('USER_READ')")
     public UserResponse getUserInfo(String id) {
         User user =userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_ID_NOT_EXISTED));
@@ -61,14 +61,14 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('USER_READ')")
     public Page<UserResponse> getAllUsers(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return userRepository.findAllByActiveTrue(pageable)
                 .map(userMapper::toUserResponse);
     }
 
-    @PostAuthorize("hasRole('ADMIN') or returnObject.username == authentication.name")
+    @PreAuthorize("hasAuthority('USER_UPDATE') or returnObject.username == authentication.name")
     public UserResponse updateUser(String id, UpdateUserRequest request) {
         User user =userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_ID_NOT_EXISTED));
@@ -79,7 +79,7 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('USER_DELETE')")
     public void deleteUser(String id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_ID_NOT_EXISTED));
@@ -88,7 +88,7 @@ public class UserService {
         userRepository.save(user);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasAuthority('USER_READ')")
     public Page<UserResponse> getUsersByRole(Role role, int page, int size){
         Pageable pageable = PageRequest.of(page, size);
 

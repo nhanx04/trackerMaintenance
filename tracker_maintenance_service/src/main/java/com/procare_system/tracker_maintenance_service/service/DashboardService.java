@@ -23,7 +23,7 @@ public class DashboardService {
     private final TicketRepository ticketRepository;
     private final DeviceRepository deviceRepository; // Bơm thêm thằng này vào
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAuthority('DASHBOARD_READ')")
     public DashboardResponse getDashboardSummary(LocalDateTime startDate, LocalDateTime endDate) {
 
         // 1. Thống kê Ticket

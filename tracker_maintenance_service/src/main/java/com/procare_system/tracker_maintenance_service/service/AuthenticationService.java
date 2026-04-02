@@ -14,6 +14,7 @@ import com.procare_system.tracker_maintenance_service.entity.User;
 import com.procare_system.tracker_maintenance_service.exception.AppException;
 import com.procare_system.tracker_maintenance_service.exception.ErrorCode;
 import com.procare_system.tracker_maintenance_service.repository.UserRepository;
+import com.procare_system.tracker_maintenance_service.mapper.RoleMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,12 +27,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.StringJoiner;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RoleMapper roleMapper;
 
     @Value("${jwt.signerKey}")
     protected String SECRET_KEY;
@@ -78,7 +82,7 @@ public class AuthenticationService {
                 .username(user.getUsername())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
-                .roles(user.getRoles())
+                .roles(roleMapper.toResponses(user.getRoles()))
                 .token(token)
                 .authenticated(isAuthenticated)
                 .build();
@@ -101,7 +105,7 @@ public class AuthenticationService {
                 .username(user.getUsername())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
-                .roles(user.getRoles())
+                .roles(roleMapper.toResponses(user.getRoles()))
                 .token(newToken)
                 .authenticated(true)
                 .build();
@@ -122,6 +126,10 @@ public class AuthenticationService {
 
         boolean isValid = signedJWT.verify(verifier);
 
+        log.info("Signature valid: {}", isValid);
+        log.info("ExpirationTime: {}", signedJWT.getJWTClaimsSet().getExpirationTime());
+        log.info("Now: {}", new Date());
+
         if(!(isValid && expiryTime.after(new Date())))
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         return signedJWT;
@@ -137,7 +145,7 @@ public class AuthenticationService {
                 ))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("scope", buildScope(user))
-                .claim("userId", user.getId()) 
+                .claim("userId", user.getId())
                 .build();
 
         Payload payload = new Payload(claimsSet.toJSONObject());
@@ -155,11 +163,17 @@ public class AuthenticationService {
     private String buildScope(User user) {
         StringJoiner stringJoiner = new StringJoiner(" ");
 
-        if (!CollectionUtils.isEmpty(user.getRoles()))
-            user.getRoles().forEach(role ->
-                    stringJoiner.add("ROLE_" + role.name())
-            );
+        if (!CollectionUtils.isEmpty(user.getRoles())) {
+            user.getRoles().forEach(role -> {
+                stringJoiner.add("ROLE_" + role.getName().name());
 
+                if (!CollectionUtils.isEmpty(role.getPermissions())) {
+                    role.getPermissions().forEach(permission ->
+                        stringJoiner.add(permission.getName().name())
+                    );
+                }
+            });
+        }
         return stringJoiner.toString();
     }
 }

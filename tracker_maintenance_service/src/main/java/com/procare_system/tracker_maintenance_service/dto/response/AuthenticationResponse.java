@@ -16,7 +16,7 @@ public class AuthenticationResponse {
     String username;
     String firstName;
     String lastName;
-    Set<Role> roles;
+    private Set<RoleResponse> roles;
 
     String token;
     boolean authenticated;

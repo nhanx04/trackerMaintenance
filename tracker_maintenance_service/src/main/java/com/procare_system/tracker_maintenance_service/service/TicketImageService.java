@@ -33,6 +33,7 @@ public class TicketImageService {
     // Chỉ upload được khi ticket đang PENDING
     // Quyền: ADMIN, MANAGER, REPORTER (người tạo)
     @Transactional
+    @PreAuthorize("hasAuthority('TICKET_UPDATE')")
     public List<TicketImageResponse> uploadBeforeImages(
             String ticketId, List<MultipartFile> files) {
 
@@ -49,6 +50,7 @@ public class TicketImageService {
     // Upload AFTER khi ticket ở IN_PROGRESS, WAITING_FOR_CONFIRMATION hoặc DONE
     // Quyền: ADMIN, MANAGER, TECHNICIAN (được assign)
     @Transactional
+    @PreAuthorize("hasAuthority('TICKET_UPDATE')")
     public List<TicketImageResponse> uploadAfterImages(
             String ticketId, List<MultipartFile> files) {
 
@@ -66,19 +68,21 @@ public class TicketImageService {
     }
 
     // Lấy tất cả ảnh của ticket
+    @PreAuthorize("hasAuthority('TICKET_READ')")
     public List<TicketImageResponse> getImages(String ticketId) {
         findActiveTicket(ticketId); // validate tồn tại
         return ticketImageRepository.findAllByTicketId(ticketId)
                 .stream().map(this::toResponse).toList();
     }
 
+    @PreAuthorize("hasAuthority('TICKET_READ')")
     public List<TicketImageResponse> getImagesByType(String ticketId, ImageType type) {
         findActiveTicket(ticketId);
         return ticketImageRepository.findAllByTicketIdAndImageType(ticketId, type)
                 .stream().map(this::toResponse).toList();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAuthority('TICKET_DELETE')")
     @Transactional
     public void deleteImage(String ticketId, String imageId) {
         TicketImage image = ticketImageRepository.findById(imageId)
@@ -149,25 +153,29 @@ public class TicketImageService {
         Authentication auth = currentAuth();
         String uid = currentUserId();
 
-        boolean isAdminOrManager = hasRole(auth, "ADMIN") || hasRole(auth, "MANAGER");
-        if (isAdminOrManager)
-            return;
+        // TICKET_ASSIGN = quyền của ADMIN/MANAGER
+        if (hasAuthority(auth, "TICKET_ASSIGN")) return;
 
-        if (type == ImageType.BEFORE && hasRole(auth, "REPORTER")) {
-            // Reporter chỉ được upload ảnh BEFORE cho ticket mình tạo
+        if (type == ImageType.BEFORE) {
+            // Chỉ người tạo ticket (REPORTER) mới được upload BEFORE
             if (!uid.equals(ticket.getCreatedByUserId()))
                 throw new AppException(ErrorCode.ACCESS_DENIED);
             return;
         }
 
-        if (type == ImageType.AFTER && hasRole(auth, "TECHNICIAN")) {
-            // Technician chỉ được upload ảnh AFTER cho ticket được assign
+        if (type == ImageType.AFTER) {
+            // Chỉ technician được assign mới được upload AFTER
             if (!uid.equals(ticket.getAssignedTechnicianId()))
                 throw new AppException(ErrorCode.ACCESS_DENIED);
             return;
         }
 
         throw new AppException(ErrorCode.ACCESS_DENIED);
+    }
+
+    private boolean hasAuthority(Authentication auth, String authority) {
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(authority));
     }
 
     private Ticket findActiveTicket(String id) {
@@ -185,10 +193,6 @@ public class TicketImageService {
         return jwt.getClaimAsString("userId");
     }
 
-    private boolean hasRole(Authentication auth, String role) {
-        return auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_" + role));
-    }
 
     private TicketImageResponse toResponse(TicketImage img) {
         return TicketImageResponse.builder()

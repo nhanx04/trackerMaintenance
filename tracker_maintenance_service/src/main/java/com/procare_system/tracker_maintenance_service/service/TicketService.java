@@ -120,7 +120,7 @@ public class TicketService {
     }
 
     @Transactional
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'REPORTER')")
+    @PreAuthorize("hasAuthority('TICKET_CREATE')")
     public TicketResponse createTicket(CreateTicketRequest request) {
         Ticket ticket = ticketMapper.toTicket(request);
         ticket.setStatus(TicketStatus.PENDING);
@@ -209,7 +209,7 @@ public class TicketService {
     }
 
     @Transactional
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAuthority('TICKET_UPDATE')")
     public TicketResponse cancelTicket(String id) {
         Ticket ticket = findActiveTicket(id);
         if (ticket.getStatus() == TicketStatus.CANCELLED) throw new AppException(ErrorCode.TICKET_ALREADY_CANCELLED);
@@ -221,7 +221,7 @@ public class TicketService {
     }
 
     @Transactional
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAuthority('TICKET_DELETE')")
     public void deleteTicket(String id) {
         Ticket ticket = findActiveTicket(id);
         ticket.setDeleted(true);
@@ -229,7 +229,7 @@ public class TicketService {
     }
 
     @Transactional
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAuthority('TICKET_ASSIGN')")
     public TicketResponse assignTechnician(String id, AssignRequest request) {
         Ticket ticket = findActiveTicket(id);
         validateStatusTransition(ticket.getStatus(), TicketStatus.ASSIGNED);
@@ -421,7 +421,7 @@ public class TicketService {
     }
 
     @Transactional
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAuthority('TICKET_CONFIRM')")
     public TicketResponse confirmCompletion(String id) {
         Ticket ticket = findActiveTicket(id);
 

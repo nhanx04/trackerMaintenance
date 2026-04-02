@@ -35,7 +35,7 @@ public class DeviceService {
     DeviceMapper deviceMapper;
     R2StorageService r2StorageService;
 
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAuthority('DEVICE_CREATE')")
     public DeviceResponse createDevice(CreateDeviceRequest request) {
         if (deviceRepository.existsByCode(request.getCode())) {
             throw new AppException(ErrorCode.DEVICE_CODE_EXISTED);
@@ -79,7 +79,7 @@ public class DeviceService {
                 .map(deviceMapper::toDeviceResponse);
     }
 
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAuthority('DEVICE_UPDATE')")
     public DeviceResponse updateDevice(Long id, UpdateDeviceRequest request) {
         Device device = deviceRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DEVICE_ID_NOT_EXISTED));
@@ -90,7 +90,7 @@ public class DeviceService {
         return deviceMapper.toDeviceResponse(device);
     }
 
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAuthority('DEVICE_DELETE')")
     public void deleteDevice(Long id) {
         Device device = deviceRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DEVICE_ID_NOT_EXISTED));
@@ -100,7 +100,7 @@ public class DeviceService {
     }
 
     @Transactional
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @PreAuthorize("hasAuthority('DEVICE_UPDATE')")
     public DeviceResponse uploadDeviceImage(Long deviceId, MultipartFile file) {
 
         Device device = deviceRepository.findById(deviceId)
@@ -127,7 +127,7 @@ public class DeviceService {
     }
 
     @Transactional
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @PreAuthorize("hasAuthority('DEVICE_UPDATE')")
     public DeviceResponse deleteDeviceImage(Long deviceId) {
         Device device = deviceRepository.findById(deviceId)
                 .orElseThrow(() -> new AppException(ErrorCode.DEVICE_ID_NOT_EXISTED));
@@ -144,7 +144,7 @@ public class DeviceService {
         return deviceMapper.toDeviceResponse(device);
     }
 
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAuthority('DEVICE_UPDATE')")
     public DeviceResponse updateDeviceStatus(Long id, DeviceStatus status) {
         Device device = deviceRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DEVICE_ID_NOT_EXISTED));

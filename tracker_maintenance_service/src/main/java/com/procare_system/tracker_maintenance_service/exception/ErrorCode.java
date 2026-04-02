@@ -40,7 +40,9 @@ public enum ErrorCode {
     TECHNICIAN_ID_REQUIRED( "Technician ID is required", HttpStatus.BAD_REQUEST),
     NOTE_REQUIRED( "Note is required", HttpStatus.BAD_REQUEST),
     PROGRESS_NOT_FOUND( "Ticket progress not found", HttpStatus.NOT_FOUND),
-    NOTIFICATION_NOT_FOUND( "Notification not found", HttpStatus.NOT_FOUND)
+    NOTIFICATION_NOT_FOUND( "Notification not found", HttpStatus.NOT_FOUND),
+    PERMISSION_NOT_FOUND( "Permission not found", HttpStatus.NOT_FOUND),
+    ROLE_NOT_FOUND( "Role not found", HttpStatus.NOT_FOUND),
     ;
 
     ErrorCode( String message, HttpStatus statusCode) {

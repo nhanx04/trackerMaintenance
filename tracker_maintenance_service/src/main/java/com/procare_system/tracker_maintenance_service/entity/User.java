@@ -1,21 +1,18 @@
 package com.procare_system.tracker_maintenance_service.entity;
 
-import com.procare_system.tracker_maintenance_service.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import java.util.List;
 import java.util.Set;
 
 @Entity
 @Table(name = "users")
-@Setter
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor
+@Setter @Getter
+@AllArgsConstructor @NoArgsConstructor
 @SuperBuilder
 public class User extends BaseAuditingEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
@@ -27,18 +24,17 @@ public class User extends BaseAuditingEntity {
     private String password;
 
     private String firstName;
-
     private String lastName;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id")
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_roles",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role")
     )
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role")
-    private Set<Role> roles;
+    private Set<RoleEntity> roles;
 
     @Column(name = "active", nullable = false)
+    @Builder.Default
     private boolean active = true;
 }
