@@ -1,4 +1,5 @@
-import HomePage from '@/module/home/index'
+import { DashboardOverview } from '@/module/shared/DashboardOverview'
 
-export default HomePage
-
+export default function ManagerDashboardPage() {
+  return <DashboardOverview roleLabel='Manager' />
+}
