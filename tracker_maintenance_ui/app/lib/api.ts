@@ -19,12 +19,45 @@ export type StoredAuth = {
   authenticated: boolean
 }
 
+const extractRoleName = (role: unknown): string | null => {
+  if (typeof role === 'string') return role
+  if (role && typeof role === 'object' && 'name' in role) {
+    const name = (role as { name?: unknown }).name
+    return typeof name === 'string' ? name : null
+  }
+  return null
+}
+
+const normalizeRoles = (roles: unknown): string[] => {
+  if (!Array.isArray(roles)) return []
+  return roles.map(extractRoleName).filter((role): role is string => Boolean(role))
+}
+
+const normalizeStoredAuth = (auth: StoredAuth | Record<string, unknown>): StoredAuth => {
+  const roles = normalizeRoles((auth as { roles?: unknown }).roles)
+  return {
+    id: String((auth as { id?: unknown }).id ?? ''),
+    username: String((auth as { username?: unknown }).username ?? ''),
+    firstName:
+      typeof (auth as { firstName?: unknown }).firstName === 'string'
+        ? ((auth as { firstName?: string }).firstName ?? undefined)
+        : undefined,
+    lastName:
+      typeof (auth as { lastName?: unknown }).lastName === 'string'
+        ? ((auth as { lastName?: string }).lastName ?? undefined)
+        : undefined,
+    roles,
+    token: String((auth as { token?: unknown }).token ?? ''),
+    authenticated: Boolean((auth as { authenticated?: unknown }).authenticated)
+  }
+}
+
 export function getStoredAuth(): StoredAuth | null {
   if (!isBrowser) return null
   const raw = localStorage.getItem(AUTH_STORAGE_KEY)
   if (!raw) return null
   try {
-    return JSON.parse(raw) as StoredAuth
+    return normalizeStoredAuth(JSON.parse(raw) as Record<string, unknown>)
   } catch {
     return null
   }
@@ -32,7 +65,7 @@ export function getStoredAuth(): StoredAuth | null {
 
 export function saveStoredAuth(auth: StoredAuth) {
   if (!isBrowser) return
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth))
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(normalizeStoredAuth(auth)))
 }
 
 export function clearStoredAuth() {

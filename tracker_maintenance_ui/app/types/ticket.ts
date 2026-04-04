@@ -30,6 +30,15 @@ export interface TicketProgress {
   images: TicketImage[]
 }
 
+export interface TicketComment {
+  id: string
+  ticketId: string
+  authorId: string
+  authorName: string
+  content: string
+  createdAt: string
+}
+
 export interface Ticket {
   id: string
   title: string

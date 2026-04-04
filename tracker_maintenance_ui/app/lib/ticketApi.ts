@@ -7,7 +7,8 @@ import type {
   ImageType,
   CreateTicketRequest,
   UpdateTicketRequest,
-  TicketProgress
+  TicketProgress,
+  TicketComment
 } from '@/types/ticket'
 
 type ApiResponse<T> = { code?: number; message?: string; result: T }
@@ -113,6 +114,15 @@ export const ticketApi = {
 
   getProgressHistory: (ticketId: string): Promise<TicketProgress[]> =>
     req<TicketProgress[]>(`/api/tickets/${ticketId}/progress`),
+
+  getComments: (ticketId: string): Promise<TicketComment[]> =>
+    req<TicketComment[]>(`/api/tickets/${ticketId}/comments`),
+
+  addComment: (ticketId: string, content: string): Promise<TicketComment> =>
+    req<TicketComment>(`/api/tickets/${ticketId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content })
+    }),
 
   markAsCompleted: (ticketId: string): Promise<Ticket> =>
     req<Ticket>(`/api/tickets/${ticketId}/complete`, { method: 'POST' }),

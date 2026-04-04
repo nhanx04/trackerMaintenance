@@ -21,7 +21,24 @@ export async function createUser(payload: CreateUserPayload, token: string) {
 }
 
 export async function getUsers(page = 0, size = 10, token?: string) {
-  return apiRequest<PageResult<BackendUser>>(`/api/users?page=${page}&size=${size}`, undefined, token)
+  const data = await apiRequest<PageResult<BackendUser>>(`/api/users?page=${page}&size=${size}`, undefined, token)
+
+  return {
+    ...data,
+    content: data.content.map((user) => ({
+      ...user,
+      roles: (user.roles as unknown[])
+        .map((role) => {
+          if (typeof role === 'string') return role
+          if (role && typeof role === 'object' && 'name' in role) {
+            const name = (role as { name?: unknown }).name
+            return typeof name === 'string' ? name : null
+          }
+          return null
+        })
+        .filter((role): role is BackendUser['roles'][number] => Boolean(role))
+    }))
+  }
 }
 
 export function saveAuth(user: AuthUser) {
