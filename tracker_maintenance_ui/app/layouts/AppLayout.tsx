@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router'
-import { FiBell, FiChevronDown, FiLogOut, FiMenu, FiMoon, FiSearch, FiSun, FiUser, FiX } from 'react-icons/fi'
+import { FiChevronDown, FiLogOut, FiMenu, FiMoon, FiSearch, FiSun, FiUser, FiX } from 'react-icons/fi'
 
 import { roleMenu } from '@/lib/navigation'
 import { cn } from '@/lib/cn'
 import type { AuthUser } from '@/types/auth'
 import type { UserRole } from '@/types/ui'
 import { RoleBadge } from '@/components/ui-custom/RoleBadge'
+import { NotificationDropdown } from '@/components/ui-custom/NotificationDropdown'
 import { getAuth, getPrimaryUiRole, logout } from '@/lib/auth'
 
 type AppLayoutProps = {
@@ -46,7 +47,6 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   useEffect(() => {
     if (!authReady) return
-
     if (!auth && pathname !== '/login' && pathname !== '/') {
       navigate('/login')
     }
@@ -139,9 +139,9 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <button onClick={toggleTheme} className='rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800'>
                   {dark ? <FiSun className='h-5 w-5' /> : <FiMoon className='h-5 w-5' />}
                 </button>
-                <button className='rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800'>
-                  <FiBell className='h-5 w-5' />
-                </button>
+
+                {/* 🔔 Notification Dropdown */}
+                <NotificationDropdown />
 
                 <div className='relative'>
                   <button
