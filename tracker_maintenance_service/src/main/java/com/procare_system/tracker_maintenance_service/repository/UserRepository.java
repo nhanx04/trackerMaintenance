@@ -20,6 +20,10 @@ public interface UserRepository extends JpaRepository<User, String> {
     Page<User> findAllByActiveTrue(Pageable pageable);
     Page<User> findByRolesContainingAndActiveTrue(Role role, Pageable pageable);
 
-    @Query("SELECT u.id FROM User u JOIN u.roles r WHERE r = :role AND u.active = true")
+    @Query("""
+        SELECT u.id FROM User u
+        JOIN u.roles r
+        WHERE r.name = :role AND u.active = true
+    """)
     List<String> findIdsByRole(@Param("role") Role role);
 }
