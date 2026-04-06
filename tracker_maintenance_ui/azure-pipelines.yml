@@ -7,6 +7,7 @@ pool:
 steps:
   - checkout: self
     persistCredentials: true
+    fetchDepth: 0
 
   - script: |
       git config --global user.email "ci-bot@example.com"
@@ -14,5 +15,5 @@ steps:
 
       git remote add github https://$(GITHUB_TOKEN)@github.com/nhanx04/trackerMaintenance.git
 
-      git push github HEAD:main --force
+      git push github HEAD:refs/heads/main --force
     displayName: "Push to GitHub"
