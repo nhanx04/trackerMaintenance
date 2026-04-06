@@ -14,5 +14,5 @@ steps:
 
       git remote add github https://$(GITHUB_TOKEN)@github.com/nhanx04/trackerMaintenance.git
 
-      git push --mirror github
-    displayName: 'Mirror to GitHub'
+      git push github HEAD:main --force
+    displayName: "Push to GitHub"
