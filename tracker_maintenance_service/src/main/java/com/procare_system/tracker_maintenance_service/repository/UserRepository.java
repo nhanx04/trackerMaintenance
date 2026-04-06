@@ -1,5 +1,7 @@
 package com.procare_system.tracker_maintenance_service.repository;
 
+import com.procare_system.tracker_maintenance_service.dto.response.UserResponse;
+import com.procare_system.tracker_maintenance_service.entity.RoleEntity;
 import com.procare_system.tracker_maintenance_service.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,8 +20,12 @@ public interface UserRepository extends JpaRepository<User, String> {
     boolean existsByUsername(String username);
 
     Page<User> findAllByActiveTrue(Pageable pageable);
-    Page<User> findByRolesContainingAndActiveTrue(Role role, Pageable pageable);
+    Page<User> findByRolesContainingAndActiveTrue(RoleEntity role, Pageable pageable);
 
-    @Query("SELECT u.id FROM User u JOIN u.roles r WHERE r = :role AND u.active = true")
+    @Query("""
+        SELECT u.id FROM User u
+        JOIN u.roles r
+        WHERE r.name = :role AND u.active = true
+    """)
     List<String> findIdsByRole(@Param("role") Role role);
 }

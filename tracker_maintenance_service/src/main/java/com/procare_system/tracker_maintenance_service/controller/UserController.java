@@ -63,7 +63,7 @@ public class UserController {
 
     @GetMapping("/by-role")
     public ApiResponse<Page<UserResponse>> getUsersByRole(
-            @RequestParam Role role,
+            @RequestParam String role,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ){
