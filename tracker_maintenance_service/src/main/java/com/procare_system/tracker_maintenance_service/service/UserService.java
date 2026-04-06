@@ -4,10 +4,12 @@ import com.procare_system.tracker_maintenance_service.dto.request.CreateUserRequ
 import com.procare_system.tracker_maintenance_service.dto.request.UpdateUserRequest;
 import com.procare_system.tracker_maintenance_service.dto.response.UserResponse;
 import com.procare_system.tracker_maintenance_service.entity.User;
+import com.procare_system.tracker_maintenance_service.entity.RoleEntity;
 import com.procare_system.tracker_maintenance_service.exception.AppException;
 import com.procare_system.tracker_maintenance_service.exception.ErrorCode;
 import com.procare_system.tracker_maintenance_service.mapper.UserMapper;
 import com.procare_system.tracker_maintenance_service.repository.UserRepository;
+import com.procare_system.tracker_maintenance_service.repository.RoleRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -29,6 +31,7 @@ public class UserService {
     UserRepository userRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
+    RoleRepository roleRepository;
 
 
     public UserResponse createUser(CreateUserRequest request) {
@@ -89,12 +92,19 @@ public class UserService {
     }
 
     @PreAuthorize("hasAuthority('USER_READ')")
-    public Page<UserResponse> getUsersByRole(Role role, int page, int size){
+    public Page<UserResponse> getUsersByRole(String roleName, int page, int size){
         Pageable pageable = PageRequest.of(page, size);
 
+        // return userRepository
+        //         .findByRolesContainingAndActiveTrue(role, pageable)
+        //         .map(userMapper::toUserResponse);
+
+        RoleEntity role = roleRepository.findById(Role.valueOf(roleName))
+            .orElseThrow(() -> new RuntimeException("Role not found"));
+
         return userRepository
-                .findByRolesContainingAndActiveTrue(role, pageable)
-                .map(userMapper::toUserResponse);
+            .findByRolesContainingAndActiveTrue(role, pageable)
+            .map(userMapper::toUserResponse);
     }
 }
 
