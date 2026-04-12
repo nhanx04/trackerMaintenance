@@ -2,6 +2,9 @@ trigger:
   branches:
     include:
       - main
+  paths:
+    include:
+      - tracker_maintenance_service/**
 
 variables:
 - name: imageName
