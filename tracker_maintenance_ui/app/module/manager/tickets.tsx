@@ -632,10 +632,13 @@ export default function ManagerTicketsPage() {
       <div className='mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
         {(
           [
-            ['PENDING', 'New', 'text-blue-600'],
+            ['PENDING', 'Pending', 'text-blue-600'],
+            ['ASSIGNED', 'Assigned', 'text-indigo-600'],
             ['IN_PROGRESS', 'In Progress', 'text-amber-600'],
+            ['WAITING_FOR_CONFIRMATION', 'Waiting Confirm', 'text-purple-600'],
+            ['UNRESOLVABLE', 'Cannot Resolve', 'text-rose-600'],
             ['DONE', 'Completed', 'text-emerald-600'],
-            ['CANCELLED', 'Cannot Resolve', 'text-rose-600']
+            ['CANCELLED', 'Cancelled', 'text-gray-500']
           ] as [TicketStatus, string, string][]
         ).map(([s, label, accent]) => (
           <button
