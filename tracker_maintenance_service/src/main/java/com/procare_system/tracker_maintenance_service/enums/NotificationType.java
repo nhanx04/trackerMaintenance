@@ -6,5 +6,6 @@ public enum NotificationType {
     ACCEPT_TICKET,
     COMPLETE_TICKET,
     CONFIRM_COMPLETION,
-    CANNOT_FIX
+    CANNOT_FIX,
+    SCHEDULE_REMINDER
 }
