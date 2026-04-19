@@ -79,8 +79,6 @@ export function NotificationDropdown() {
         // silent
       }
     }
-    if (n.referenceId) navigate(`/tickets/${n.referenceId}`)
-    setOpen(false)
   }
 
   async function handleMarkAllAsRead() {
