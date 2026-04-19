@@ -29,8 +29,8 @@ public class MaintenanceReminderScheduler {
      * Chạy mỗi ngày lúc 8:00 sáng.
      * Nhắc lịch bảo trì vào 3 mốc: hôm nay, 1 ngày nữa, 3 ngày nữa.
      */
-    // @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Ho_Chi_Minh")
-    @Scheduled(cron = "*/10 * * * * *") // mỗi 10 giây chạy 1 lần
+    @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Ho_Chi_Minh")
+    // @Scheduled(cron = "*/10 * * * * *") // mỗi 10 giây chạy 1 lần
     public void sendMaintenanceReminders() {
         log.info("[Scheduler] Bắt đầu gửi nhắc lịch bảo trì - {}", LocalDate.now());
 
