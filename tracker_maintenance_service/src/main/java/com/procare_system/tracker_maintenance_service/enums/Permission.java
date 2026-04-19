@@ -27,4 +27,10 @@ public enum Permission {
     // Role & Permission management
     ROLE_MANAGE,
     PERMISSION_MANAGE,
+
+    // Schedule
+    SCHEDULE_CREATE,
+    SCHEDULE_UPDATE,
+    SCHEDULE_DELETE
+
 }

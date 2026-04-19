@@ -43,6 +43,8 @@ public enum ErrorCode {
     NOTIFICATION_NOT_FOUND( "Notification not found", HttpStatus.NOT_FOUND),
     PERMISSION_NOT_FOUND( "Permission not found", HttpStatus.NOT_FOUND),
     ROLE_NOT_FOUND( "Role not found", HttpStatus.NOT_FOUND),
+    SCHEDULE_NOT_FOUND( "Schedule not found", HttpStatus.NOT_FOUND),
+    SCHEDULE_CANNOT_MODIFY( "Only PENDING schedules can be modified", HttpStatus.BAD_REQUEST)
     ;
 
     ErrorCode( String message, HttpStatus statusCode) {

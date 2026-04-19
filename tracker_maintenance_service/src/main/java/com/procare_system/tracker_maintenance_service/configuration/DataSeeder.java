@@ -36,7 +36,8 @@ public class DataSeeder {
             Permission.TICKET_CREATE, Permission.TICKET_READ,
             Permission.TICKET_UPDATE, Permission.TICKET_DELETE,
             Permission.TICKET_ASSIGN, Permission.TICKET_CONFIRM,
-            Permission.DASHBOARD_READ
+            Permission.DASHBOARD_READ,
+            Permission.SCHEDULE_CREATE, Permission.SCHEDULE_UPDATE, Permission.SCHEDULE_DELETE
         ),
 
         Role.TECHNICIAN, Set.of(
@@ -72,21 +73,21 @@ public class DataSeeder {
                     .stream().collect(Collectors.toMap(PermissionEntity::getName, e -> e));
 
             Arrays.stream(Role.values()).forEach(role -> {
-                if (!roleRepository.existsById(role)) {
-                    Set<PermissionEntity> perms = ROLE_PERMISSIONS
-                            .getOrDefault(role, Set.of())
-                            .stream()
-                            .map(permMap::get)
-                            .collect(Collectors.toSet());
+                Set<PermissionEntity> perms = ROLE_PERMISSIONS
+                        .getOrDefault(role, Set.of())
+                        .stream()
+                        .map(permMap::get)
+                        .collect(Collectors.toSet());
 
-                    roleRepository.save(
-                        RoleEntity.builder()
-                            .name(role)
-                            .description(role.name())
-                            .permissions(perms)
-                            .build()
-                    );
-                }
+                RoleEntity roleEntity = roleRepository.findById(role)
+                        .orElseGet(() -> RoleEntity.builder()
+                                .name(role)
+                                .description(role.name())
+                                .build());
+
+                roleEntity.setPermissions(perms); 
+
+                roleRepository.save(roleEntity);
             });
             log.info("Roles seeded");
         };
