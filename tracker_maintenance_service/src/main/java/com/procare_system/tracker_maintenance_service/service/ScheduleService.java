@@ -36,9 +36,6 @@ public class ScheduleService {
 
     ScheduleRepository scheduleRepository;
     ScheduleMapper scheduleMapper;
-    UserRepository userRepository;
-
-    // ── helpers ────────────────────────────────────────────────────────────────
 
     private Authentication currentAuth() {
         return SecurityContextHolder.getContext().getAuthentication();
@@ -47,7 +44,6 @@ public class ScheduleService {
     private String currentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
-            // JWT đã có claim "userId" — lấy thẳng, không cần query DB
             Object userId = jwtAuth.getToken().getClaim("userId");
             if (userId == null) throw new RuntimeException("userId claim missing in token");
             return userId.toString();
@@ -68,7 +64,6 @@ public class ScheduleService {
                 .orElseThrow(() -> new AppException(ErrorCode.SCHEDULE_NOT_FOUND));
     }
 
-    // ── CRUD ───────────────────────────────────────────────────────────────────
 
     @PreAuthorize("hasAuthority('SCHEDULE_CREATE')")
     public ScheduleResponse createSchedule(CreateScheduleRequest request) {
@@ -82,7 +77,6 @@ public class ScheduleService {
     public ScheduleResponse getScheduleById(String id) {
         MaintenanceSchedule schedule = findActive(id);
 
-        // Technician chỉ xem được lịch được giao cho mình
         if (hasRole("TECHNICIAN") && !currentUserId().equals(schedule.getAssignedTechnicianId())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
@@ -104,7 +98,6 @@ public class ScheduleService {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("isDeleted"), false));
 
-            // Technician chỉ thấy lịch của mình
             if (hasRole("TECHNICIAN")) {
                 predicates.add(cb.equal(root.get("assignedTechnicianId"), currentUserId()));
             }
@@ -134,7 +127,6 @@ public class ScheduleService {
     public ScheduleResponse updateSchedule(String id, UpdateScheduleRequest request) {
         MaintenanceSchedule schedule = findActive(id);
 
-        // Không cho cập nhật lịch đã hoàn thành / huỷ
         if (schedule.getStatus() == ScheduleStatus.DONE
                 || schedule.getStatus() == ScheduleStatus.CANCELLED) {
             throw new AppException(ErrorCode.SCHEDULE_CANNOT_MODIFY);
@@ -152,8 +144,6 @@ public class ScheduleService {
         schedule.setDeleted(true);
         scheduleRepository.save(schedule);
     }
-
-    // ── Thao tác trạng thái ────────────────────────────────────────────────────
 
     @Transactional
     @PreAuthorize("hasAuthority('SCHEDULE_UPDATE')")
@@ -199,5 +189,29 @@ public class ScheduleService {
         schedule.setStatus(ScheduleStatus.DONE);
         scheduleRepository.save(schedule);
         return scheduleMapper.toScheduleResponse(schedule);
+    }
+
+    public List<ScheduleResponse> getUpcomingSchedules(int withinDays) {
+        int clampedDays = Math.min(Math.max(withinDays, 1), 90);
+        LocalDate from = LocalDate.now();
+        LocalDate to = from.plusDays(clampedDays);
+
+        List<ScheduleStatus> activeStatuses = List.of(
+                ScheduleStatus.PENDING,
+                ScheduleStatus.IN_PROGRESS
+        );
+
+        List<MaintenanceSchedule> schedules = scheduleRepository.findUpcoming(activeStatuses, from, to);
+
+        if (hasRole("TECHNICIAN")) {
+            String uid = currentUserId();
+            schedules = schedules.stream()
+                    .filter(s -> uid.equals(s.getAssignedTechnicianId()))
+                    .toList();
+        }
+
+        return schedules.stream()
+                .map(scheduleMapper::toScheduleResponse)
+                .toList();
     }
 }

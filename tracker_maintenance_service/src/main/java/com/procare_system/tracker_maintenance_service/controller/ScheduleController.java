@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/schedules")
@@ -89,6 +90,15 @@ public class ScheduleController {
     public ApiResponse<ScheduleResponse> complete(@PathVariable String id) {
         return ApiResponse.<ScheduleResponse>builder()
                 .result(scheduleService.completeSchedule(id))
+                .build();
+    }
+
+    @GetMapping("/upcoming")
+    public ApiResponse<List<ScheduleResponse>> getUpcoming(
+            @RequestParam(defaultValue = "7") int withinDays
+    ) {
+        return ApiResponse.<List<ScheduleResponse>>builder()
+                .result(scheduleService.getUpcomingSchedules(withinDays))
                 .build();
     }
 }
