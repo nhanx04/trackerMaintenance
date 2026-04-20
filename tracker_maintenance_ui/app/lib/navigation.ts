@@ -24,6 +24,7 @@ export const roleMenu: Record<UserRole, NavItem[]> = {
     { label: 'Equipment', path: '/manager/equipment', icon: FiHardDrive },
     { label: 'Tickets', path: '/manager/tickets', icon: FiClipboard },
     { label: 'Maintenance History', path: '/manager/history', icon: FiClock },
+    { label: 'Maintenance Schedule', path: '/manager/maintenance', icon: FiClock },
     { label: 'Reports', path: '/manager/reports', icon: FiBarChart2 }
   ],
   Technician: [
