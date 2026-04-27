@@ -23,8 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import com.procare_system.tracker_maintenance_service.repository.UserRepository;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +43,8 @@ public class ScheduleService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
             Object userId = jwtAuth.getToken().getClaim("userId");
-            if (userId == null) throw new RuntimeException("userId claim missing in token");
+            if (userId == null)
+                throw new RuntimeException("userId claim missing in token");
             return userId.toString();
         }
         throw new AppException(ErrorCode.UNAUTHENTICATED);
@@ -56,22 +55,56 @@ public class ScheduleService {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_" + role));
     }
 
-
-
     private MaintenanceSchedule findActive(String id) {
         return scheduleRepository.findById(id)
                 .filter(s -> !s.isDeleted())
                 .orElseThrow(() -> new AppException(ErrorCode.SCHEDULE_NOT_FOUND));
     }
 
+    private int normalizeCycleDays(Integer cycleDays) {
+        if (cycleDays == null)
+            return 30;
+        return Math.min(Math.max(cycleDays, 1), 365);
+    }
+
+    private ScheduleResponse toResponse(MaintenanceSchedule schedule) {
+        ScheduleResponse response = scheduleMapper.toScheduleResponse(schedule);
+        response.setCycleDays(schedule.getCycleDays());
+        response.setCompletedAt(schedule.getCompletedAt());
+        response.setCompletedByUserId(schedule.getCompletedByUserId());
+        response.setCompletionNote(schedule.getCompletionNote());
+        return response;
+    }
+
+    private void markDoneAndCreateNext(MaintenanceSchedule schedule, String completionNote) {
+        schedule.setStatus(ScheduleStatus.DONE);
+        schedule.setCompletedAt(java.time.LocalDateTime.now());
+        schedule.setCompletedByUserId(currentUserId());
+        schedule.setCompletionNote(completionNote);
+        scheduleRepository.save(schedule);
+
+        MaintenanceSchedule nextSchedule = MaintenanceSchedule.builder()
+                .deviceId(schedule.getDeviceId())
+                .title(schedule.getTitle())
+                .description(schedule.getDescription())
+                .scheduledDate(schedule.getScheduledDate().plusDays(schedule.getCycleDays()))
+                .assignedTechnicianId(schedule.getAssignedTechnicianId())
+                .createdByUserId(currentUserId())
+                .cycleDays(schedule.getCycleDays())
+                .status(ScheduleStatus.PENDING)
+                .isDeleted(false)
+                .build();
+        scheduleRepository.save(nextSchedule);
+    }
 
     @PreAuthorize("hasAuthority('SCHEDULE_CREATE')")
     public ScheduleResponse createSchedule(CreateScheduleRequest request) {
         MaintenanceSchedule schedule = scheduleMapper.toSchedule(request);
         schedule.setCreatedByUserId(currentUserId());
         schedule.setStatus(ScheduleStatus.PENDING);
+        schedule.setCycleDays(normalizeCycleDays(request.getCycleDays()));
         scheduleRepository.save(schedule);
-        return scheduleMapper.toScheduleResponse(schedule);
+        return toResponse(schedule);
     }
 
     public ScheduleResponse getScheduleById(String id) {
@@ -81,7 +114,7 @@ public class ScheduleService {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
 
-        return scheduleMapper.toScheduleResponse(schedule);
+        return toResponse(schedule);
     }
 
     public Page<ScheduleResponse> getSchedules(
@@ -90,8 +123,7 @@ public class ScheduleService {
             LocalDate from,
             LocalDate to,
             int page,
-            int size
-    ) {
+            int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("scheduledDate").ascending());
 
         Specification<MaintenanceSchedule> spec = (root, query, cb) -> {
@@ -119,7 +151,7 @@ public class ScheduleService {
         };
 
         return scheduleRepository.findAll(spec, pageable)
-                .map(scheduleMapper::toScheduleResponse);
+                .map(this::toResponse);
     }
 
     @Transactional
@@ -132,9 +164,20 @@ public class ScheduleService {
             throw new AppException(ErrorCode.SCHEDULE_CANNOT_MODIFY);
         }
 
+        ScheduleStatus previousStatus = schedule.getStatus();
         scheduleMapper.updateSchedule(request, schedule);
+
+        if (request.getCycleDays() != null) {
+            schedule.setCycleDays(normalizeCycleDays(request.getCycleDays()));
+        }
+
+        if (request.getStatus() == ScheduleStatus.DONE && previousStatus != ScheduleStatus.DONE) {
+            markDoneAndCreateNext(schedule, request.getCompletionNote());
+            return toResponse(schedule);
+        }
+
         scheduleRepository.save(schedule);
-        return scheduleMapper.toScheduleResponse(schedule);
+        return toResponse(schedule);
     }
 
     @Transactional
@@ -154,11 +197,11 @@ public class ScheduleService {
         }
         schedule.setStatus(ScheduleStatus.CANCELLED);
         scheduleRepository.save(schedule);
-        return scheduleMapper.toScheduleResponse(schedule);
+        return toResponse(schedule);
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_TECHNICIAN')")
+    @PreAuthorize("hasRole('TECHNICIAN')")
     public ScheduleResponse startSchedule(String id) {
         MaintenanceSchedule schedule = findActive(id);
 
@@ -171,11 +214,11 @@ public class ScheduleService {
 
         schedule.setStatus(ScheduleStatus.IN_PROGRESS);
         scheduleRepository.save(schedule);
-        return scheduleMapper.toScheduleResponse(schedule);
+        return toResponse(schedule);
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('ROLE_TECHNICIAN')")
+    @PreAuthorize("hasRole('TECHNICIAN')")
     public ScheduleResponse completeSchedule(String id) {
         MaintenanceSchedule schedule = findActive(id);
 
@@ -186,9 +229,8 @@ public class ScheduleService {
             throw new AppException(ErrorCode.SCHEDULE_CANNOT_MODIFY);
         }
 
-        schedule.setStatus(ScheduleStatus.DONE);
-        scheduleRepository.save(schedule);
-        return scheduleMapper.toScheduleResponse(schedule);
+        markDoneAndCreateNext(schedule, null);
+        return toResponse(schedule);
     }
 
     public List<ScheduleResponse> getUpcomingSchedules(int withinDays) {
@@ -198,8 +240,7 @@ public class ScheduleService {
 
         List<ScheduleStatus> activeStatuses = List.of(
                 ScheduleStatus.PENDING,
-                ScheduleStatus.IN_PROGRESS
-        );
+                ScheduleStatus.IN_PROGRESS);
 
         List<MaintenanceSchedule> schedules = scheduleRepository.findUpcoming(activeStatuses, from, to);
 
@@ -211,7 +252,30 @@ public class ScheduleService {
         }
 
         return schedules.stream()
-                .map(scheduleMapper::toScheduleResponse)
+                .map(this::toResponse)
                 .toList();
+    }
+
+    public Page<ScheduleResponse> getMaintenanceHistory(String deviceId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("completedAt").descending());
+
+        Specification<MaintenanceSchedule> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("isDeleted"), false));
+            predicates.add(cb.equal(root.get("status"), ScheduleStatus.DONE));
+
+            if (hasRole("TECHNICIAN")) {
+                predicates.add(cb.equal(root.get("assignedTechnicianId"), currentUserId()));
+            }
+
+            if (StringUtils.hasText(deviceId)) {
+                predicates.add(cb.equal(root.get("deviceId"), deviceId));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return scheduleRepository.findAll(spec, pageable)
+                .map(this::toResponse);
     }
 }

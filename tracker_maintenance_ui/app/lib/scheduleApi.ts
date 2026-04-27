@@ -61,6 +61,14 @@ export const scheduleApi = {
 
   getUpcoming: (withinDays = 7) => req<MaintenanceSchedule[]>(`/api/schedules/upcoming?withinDays=${withinDays}`),
 
+  getHistory: (page = 0, size = 20, deviceId?: string) => {
+    const params = new URLSearchParams()
+    params.set('page', String(page))
+    params.set('size', String(size))
+    if (deviceId) params.set('deviceId', deviceId)
+    return req<SchedulePage>(`/api/schedules/history?${params.toString()}`)
+  },
+
   complete: (id: string) => req<MaintenanceSchedule>(`/api/schedules/${id}/complete`, { method: 'PATCH' }),
 
   update: (id: string, payload: UpdateSchedulePayload) =>
@@ -69,4 +77,3 @@ export const scheduleApi = {
       body: JSON.stringify(payload)
     })
 }
-

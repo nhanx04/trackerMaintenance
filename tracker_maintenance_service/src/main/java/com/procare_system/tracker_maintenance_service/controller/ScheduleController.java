@@ -24,81 +24,87 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ScheduleController {
 
-    ScheduleService scheduleService;
+        ScheduleService scheduleService;
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<ScheduleResponse> create(@Valid @RequestBody CreateScheduleRequest request) {
-        return ApiResponse.<ScheduleResponse>builder()
-                .result(scheduleService.createSchedule(request))
-                .build();
-    }
+        @PostMapping
+        @ResponseStatus(HttpStatus.CREATED)
+        public ApiResponse<ScheduleResponse> create(@Valid @RequestBody CreateScheduleRequest request) {
+                return ApiResponse.<ScheduleResponse>builder()
+                                .result(scheduleService.createSchedule(request))
+                                .build();
+        }
 
-    @GetMapping("/{id}")
-    public ApiResponse<ScheduleResponse> getById(@PathVariable String id) {
-        return ApiResponse.<ScheduleResponse>builder()
-                .result(scheduleService.getScheduleById(id))
-                .build();
-    }
+        @GetMapping("/{id}")
+        public ApiResponse<ScheduleResponse> getById(@PathVariable String id) {
+                return ApiResponse.<ScheduleResponse>builder()
+                                .result(scheduleService.getScheduleById(id))
+                                .build();
+        }
 
-    @GetMapping
-    public ApiResponse<Page<ScheduleResponse>> getAll(
-            @RequestParam(required = false) String deviceId,
-            @RequestParam(required = false) ScheduleStatus status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        return ApiResponse.<Page<ScheduleResponse>>builder()
-                .result(scheduleService.getSchedules(deviceId, status, from, to, page, size))
-                .build();
-    }
+        @GetMapping
+        public ApiResponse<Page<ScheduleResponse>> getAll(
+                        @RequestParam(required = false) String deviceId,
+                        @RequestParam(required = false) ScheduleStatus status,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size) {
+                return ApiResponse.<Page<ScheduleResponse>>builder()
+                                .result(scheduleService.getSchedules(deviceId, status, from, to, page, size))
+                                .build();
+        }
 
-    @PutMapping("/{id}")
-    public ApiResponse<ScheduleResponse> update(
-            @PathVariable String id,
-            @RequestBody UpdateScheduleRequest request
-    ) {
-        return ApiResponse.<ScheduleResponse>builder()
-                .result(scheduleService.updateSchedule(id, request))
-                .build();
-    }
+        @PutMapping("/{id}")
+        public ApiResponse<ScheduleResponse> update(
+                        @PathVariable String id,
+                        @RequestBody UpdateScheduleRequest request) {
+                return ApiResponse.<ScheduleResponse>builder()
+                                .result(scheduleService.updateSchedule(id, request))
+                                .build();
+        }
 
-    @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable String id) {
-        scheduleService.deleteSchedule(id);
-        return ApiResponse.<Void>builder().build();
-    }
+        @DeleteMapping("/{id}")
+        public ApiResponse<Void> delete(@PathVariable String id) {
+                scheduleService.deleteSchedule(id);
+                return ApiResponse.<Void>builder().build();
+        }
 
+        @PatchMapping("/{id}/cancel")
+        public ApiResponse<ScheduleResponse> cancel(@PathVariable String id) {
+                return ApiResponse.<ScheduleResponse>builder()
+                                .result(scheduleService.cancelSchedule(id))
+                                .build();
+        }
 
-    @PatchMapping("/{id}/cancel")
-    public ApiResponse<ScheduleResponse> cancel(@PathVariable String id) {
-        return ApiResponse.<ScheduleResponse>builder()
-                .result(scheduleService.cancelSchedule(id))
-                .build();
-    }
+        @PatchMapping("/{id}/start")
+        public ApiResponse<ScheduleResponse> start(@PathVariable String id) {
+                return ApiResponse.<ScheduleResponse>builder()
+                                .result(scheduleService.startSchedule(id))
+                                .build();
+        }
 
-    @PatchMapping("/{id}/start")
-    public ApiResponse<ScheduleResponse> start(@PathVariable String id) {
-        return ApiResponse.<ScheduleResponse>builder()
-                .result(scheduleService.startSchedule(id))
-                .build();
-    }
+        @PatchMapping("/{id}/complete")
+        public ApiResponse<ScheduleResponse> complete(@PathVariable String id) {
+                return ApiResponse.<ScheduleResponse>builder()
+                                .result(scheduleService.completeSchedule(id))
+                                .build();
+        }
 
-    @PatchMapping("/{id}/complete")
-    public ApiResponse<ScheduleResponse> complete(@PathVariable String id) {
-        return ApiResponse.<ScheduleResponse>builder()
-                .result(scheduleService.completeSchedule(id))
-                .build();
-    }
+        @GetMapping("/upcoming")
+        public ApiResponse<List<ScheduleResponse>> getUpcoming(
+                        @RequestParam(defaultValue = "7") int withinDays) {
+                return ApiResponse.<List<ScheduleResponse>>builder()
+                                .result(scheduleService.getUpcomingSchedules(withinDays))
+                                .build();
+        }
 
-    @GetMapping("/upcoming")
-    public ApiResponse<List<ScheduleResponse>> getUpcoming(
-            @RequestParam(defaultValue = "7") int withinDays
-    ) {
-        return ApiResponse.<List<ScheduleResponse>>builder()
-                .result(scheduleService.getUpcomingSchedules(withinDays))
-                .build();
-    }
+        @GetMapping("/history")
+        public ApiResponse<Page<ScheduleResponse>> getHistory(
+                        @RequestParam(required = false) String deviceId,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size) {
+                return ApiResponse.<Page<ScheduleResponse>>builder()
+                                .result(scheduleService.getMaintenanceHistory(deviceId, page, size))
+                                .build();
+        }
 }

@@ -12,8 +12,11 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "maintenance_schedules")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class MaintenanceSchedule {
 
@@ -36,6 +39,19 @@ public class MaintenanceSchedule {
     String assignedTechnicianId;
 
     String createdByUserId;
+
+    @Column(name = "cycle_days", nullable = false)
+    @Builder.Default
+    Integer cycleDays = 30;
+
+    @Column(name = "completed_at")
+    LocalDateTime completedAt;
+
+    @Column(name = "completed_by_user_id")
+    String completedByUserId;
+
+    @Column(name = "completion_note", columnDefinition = "TEXT")
+    String completionNote;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

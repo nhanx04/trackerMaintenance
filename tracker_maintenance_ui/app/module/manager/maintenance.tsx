@@ -21,12 +21,6 @@ type ScheduleFormState = {
 
 const todayIso = () => new Date().toISOString().slice(0, 10)
 
-const addDays = (isoDate: string, days: number) => {
-  const d = new Date(isoDate)
-  d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
-}
-
 export default function ManagerMaintenancePage() {
   const [schedules, setSchedules] = useState<MaintenanceSchedule[]>([])
   const [reminders, setReminders] = useState<MaintenanceSchedule[]>([])
@@ -35,6 +29,7 @@ export default function ManagerMaintenancePage() {
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [technicians, setTechnicians] = useState<BackendUser[]>([])
+  const [history, setHistory] = useState<MaintenanceSchedule[]>([])
   const [techQuery, setTechQuery] = useState('')
   const [techPickerOpen, setTechPickerOpen] = useState(false)
   const [equipmentQuery, setEquipmentQuery] = useState('')
@@ -75,6 +70,15 @@ export default function ManagerMaintenancePage() {
     [equipment, form.deviceId]
   )
 
+  const technicianNameMap = useMemo(() => {
+    return Object.fromEntries(
+      technicians.map((tech) => {
+        const fullName = [tech.firstName, tech.lastName].filter(Boolean).join(' ').trim()
+        return [tech.id, fullName || tech.username]
+      })
+    )
+  }, [technicians])
+
   const filteredTechnicians = useMemo(() => {
     const query = techQuery.trim().toLowerCase()
     if (!query) return technicians
@@ -98,14 +102,16 @@ export default function ManagerMaintenancePage() {
   async function loadData() {
     setLoading(true)
     try {
-      const [schedulePage, upcoming, equipmentPage] = await Promise.all([
+      const [schedulePage, upcoming, equipmentPage, historyPage] = await Promise.all([
         scheduleApi.getAll({ page: 0, size: 200 }),
         scheduleApi.getUpcoming(3),
-        equipmentApi.getAll({ page: 0, size: 200 })
+        equipmentApi.getAll({ page: 0, size: 200 }),
+        scheduleApi.getHistory(0, 100)
       ])
       setSchedules(schedulePage.content)
       setReminders(upcoming)
       setEquipment(equipmentPage.content)
+      setHistory(historyPage.content)
     } catch (error) {
       setToast(error instanceof Error ? error.message : 'Failed to load maintenance data')
     } finally {
@@ -132,12 +138,14 @@ export default function ManagerMaintenancePage() {
 
     setSubmitting(true)
     try {
+      const cycle = Number(form.cycleDays)
       await scheduleApi.create({
         deviceId: form.deviceId,
         title: form.title,
         description: form.description || undefined,
         scheduledDate: form.scheduledDate,
-        assignedTechnicianId: form.assignedTechnicianId || undefined
+        assignedTechnicianId: form.assignedTechnicianId || undefined,
+        cycleDays: Number.isFinite(cycle) && cycle > 0 ? cycle : 30
       })
       setToast('Maintenance schedule created successfully.')
       setForm((prev) => ({ ...prev, title: '', description: '' }))
@@ -152,18 +160,6 @@ export default function ManagerMaintenancePage() {
   async function handleMarkDone(schedule: MaintenanceSchedule) {
     try {
       await scheduleApi.update(schedule.id, { status: 'DONE' })
-
-      const cycle = Number(form.cycleDays)
-      if (Number.isFinite(cycle) && cycle > 0) {
-        await scheduleApi.create({
-          deviceId: schedule.deviceId,
-          title: schedule.title,
-          description: schedule.description,
-          assignedTechnicianId: schedule.assignedTechnicianId,
-          scheduledDate: addDays(schedule.scheduledDate, cycle)
-        })
-      }
-
       setToast('Marked as maintained. Next cycle schedule has been reset.')
       await loadData()
     } catch (error) {
@@ -314,6 +310,9 @@ export default function ManagerMaintenancePage() {
                 <tr className='border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700'>
                   <th className='px-3 py-2'>Equipment</th>
                   <th className='px-3 py-2'>Title</th>
+                  <th className='px-3 py-2'>Description</th>
+                  <th className='px-3 py-2'>Technician</th>
+                  <th className='px-3 py-2'>Cycle Days</th>
                   <th className='px-3 py-2'>Scheduled Date</th>
                   <th className='px-3 py-2'>Status</th>
                   <th className='px-3 py-2 text-right'>Action</th>
@@ -322,6 +321,9 @@ export default function ManagerMaintenancePage() {
               <tbody>
                 {activeSchedules.map((item) => {
                   const isOverdue = item.scheduledDate < todayIso()
+                  const description = item.description?.trim() ?? ''
+                  const shortDescription =
+                    description.length > 40 ? `${description.slice(0, 40)}...` : description || '-'
                   return (
                     <tr
                       key={item.id}
@@ -333,6 +335,15 @@ export default function ManagerMaintenancePage() {
                     >
                       <td className='px-3 py-2'>{equipmentMap[item.deviceId] ?? item.deviceId}</td>
                       <td className='px-3 py-2'>{item.title}</td>
+                      <td className='px-3 py-2' title={description || '-'}>
+                        {shortDescription}
+                      </td>
+                      <td className='px-3 py-2'>
+                        {item.assignedTechnicianId
+                          ? (technicianNameMap[item.assignedTechnicianId] ?? item.assignedTechnicianId)
+                          : '-'}
+                      </td>
+                      <td className='px-3 py-2'>{item.cycleDays}</td>
                       <td className='px-3 py-2'>{item.scheduledDate}</td>
                       <td className='px-3 py-2'>{item.status}</td>
                       <td className='px-3 py-2 text-right'>
@@ -348,7 +359,7 @@ export default function ManagerMaintenancePage() {
                 })}
                 {activeSchedules.length === 0 && (
                   <tr>
-                    <td colSpan={5} className='px-3 py-6 text-center text-slate-500'>
+                    <td colSpan={8} className='px-3 py-6 text-center text-slate-500'>
                       No active schedules.
                     </td>
                   </tr>
@@ -357,6 +368,47 @@ export default function ManagerMaintenancePage() {
             </table>
           </div>
         )}
+      </section>
+
+      <section className='mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900'>
+        <div className='mb-3 flex items-center justify-between'>
+          <h2 className='text-base font-semibold'>Maintenance History</h2>
+          <p className='text-sm text-slate-500'>Completed records: {history.length}</p>
+        </div>
+
+        <div className='overflow-x-auto'>
+          <table className='min-w-full text-left text-sm'>
+            <thead>
+              <tr className='border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700'>
+                <th className='px-3 py-2'>Equipment</th>
+                <th className='px-3 py-2'>Title</th>
+                <th className='px-3 py-2'>Cycle (days)</th>
+                <th className='px-3 py-2'>Scheduled Date</th>
+                <th className='px-3 py-2'>Completed At</th>
+                <th className='px-3 py-2'>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((item) => (
+                <tr key={item.id} className='border-b border-slate-100 dark:border-slate-800'>
+                  <td className='px-3 py-2'>{equipmentMap[item.deviceId] ?? item.deviceId}</td>
+                  <td className='px-3 py-2'>{item.title}</td>
+                  <td className='px-3 py-2'>{item.cycleDays}</td>
+                  <td className='px-3 py-2'>{item.scheduledDate}</td>
+                  <td className='px-3 py-2'>{item.completedAt ? new Date(item.completedAt).toLocaleString() : '-'}</td>
+                  <td className='px-3 py-2'>{item.status}</td>
+                </tr>
+              ))}
+              {history.length === 0 && (
+                <tr>
+                  <td colSpan={6} className='px-3 py-6 text-center text-slate-500'>
+                    No maintenance history yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {equipmentPickerOpen && (

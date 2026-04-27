@@ -8,7 +8,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
-@NoArgsConstructor @AllArgsConstructor @Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ScheduleResponse {
     String id;
@@ -18,6 +20,10 @@ public class ScheduleResponse {
     LocalDate scheduledDate;
     String assignedTechnicianId;
     String createdByUserId;
+    Integer cycleDays;
+    LocalDateTime completedAt;
+    String completedByUserId;
+    String completionNote;
     ScheduleStatus status;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;

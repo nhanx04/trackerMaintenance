@@ -7,12 +7,16 @@ import lombok.experimental.FieldDefaults;
 import java.time.LocalDate;
 
 @Data
-@NoArgsConstructor @AllArgsConstructor @Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UpdateScheduleRequest {
     String title;
     String description;
     LocalDate scheduledDate;
     String assignedTechnicianId;
+    Integer cycleDays;
+    String completionNote;
     ScheduleStatus status;
 }

@@ -9,10 +9,17 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring")
 public interface ScheduleMapper {
 
+    @Mapping(target = "cycleDays", source = "cycleDays")
     MaintenanceSchedule toSchedule(CreateScheduleRequest request);
 
+    @Mapping(target = "cycleDays", source = "cycleDays")
+    @Mapping(target = "completedAt", source = "completedAt")
+    @Mapping(target = "completedByUserId", source = "completedByUserId")
+    @Mapping(target = "completionNote", source = "completionNote")
     ScheduleResponse toScheduleResponse(MaintenanceSchedule schedule);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "cycleDays", source = "cycleDays")
+    @Mapping(target = "completionNote", source = "completionNote")
     void updateSchedule(UpdateScheduleRequest request, @MappingTarget MaintenanceSchedule schedule);
 }

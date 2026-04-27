@@ -8,6 +8,10 @@ export interface MaintenanceSchedule {
   scheduledDate: string
   assignedTechnicianId?: string
   createdByUserId?: string
+  cycleDays: number
+  completedAt?: string
+  completedByUserId?: string
+  completionNote?: string
   status: ScheduleStatus
   createdAt?: string
   updatedAt?: string
@@ -19,6 +23,7 @@ export interface CreateSchedulePayload {
   description?: string
   scheduledDate: string
   assignedTechnicianId?: string
+  cycleDays?: number
 }
 
 export interface UpdateSchedulePayload {
@@ -26,6 +31,8 @@ export interface UpdateSchedulePayload {
   description?: string
   scheduledDate?: string
   assignedTechnicianId?: string
+  cycleDays?: number
+  completionNote?: string
   status?: ScheduleStatus
 }
 
@@ -36,4 +43,3 @@ export interface SchedulePage {
   size: number
   number: number
 }
-
