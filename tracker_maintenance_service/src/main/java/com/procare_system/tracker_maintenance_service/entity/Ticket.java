@@ -58,4 +58,16 @@ public class Ticket {
     String unresolvableReason;
 
     String confirmedByUserId;
+
+    @Column(name = "due_time")
+    LocalDateTime dueTime;
+
+    // Cờ đánh dấu đã quá hạn
+    @Builder.Default
+    @Column(name = "is_overdue")
+    boolean isOverdue = false;
+
+    @Builder.Default
+    @Column(name = "is_due_soon_warning_sent")
+    boolean isDueSoonWarningSent = false;
 }

@@ -53,10 +53,12 @@ public class TicketController {
             @RequestParam(required = false) TicketStatus status,
             @RequestParam(required = false) TicketPriority priority,
             @RequestParam(required = false) String deviceId,
+            @RequestParam(required = false) Boolean isOverdue, // 👇 THÊM DÒNG NÀY
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return ApiResponse.<Page<TicketResponse>>builder()
-                .result(ticketService.getTickets(title, status, priority, deviceId, page, size))
+                // Truyền thêm isOverdue vào service
+                .result(ticketService.getTickets(title, status, priority, deviceId, isOverdue, page, size))
                 .build();
     }
 

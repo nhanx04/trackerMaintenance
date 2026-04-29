@@ -38,4 +38,20 @@ public interface TicketRepository extends JpaRepository<Ticket, String>,
             "AND (cast(:endDate as timestamp) IS NULL OR created_at <= :endDate)",
             nativeQuery = true)
     Double getAverageProcessingTimeInHours(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT t FROM Ticket t WHERE t.isDeleted = false " +
+            "AND t.isOverdue = false " +
+            "AND t.status NOT IN ('DONE', 'CANCELLED', 'UNRESOLVABLE') " +
+            "AND t.dueTime < :now")
+    List<Ticket> findNewlyOverdueTickets(@Param("now") LocalDateTime now);
+
+    // Tìm ticket SẮP QUÁ HẠN (ví dụ: còn dưới 2 tiếng) và CHƯA gửi cảnh báo
+    @Query("SELECT t FROM Ticket t WHERE t.isDeleted = false " +
+            "AND t.isOverdue = false AND t.isDueSoonWarningSent = false " +
+            "AND t.status NOT IN ('DONE', 'CANCELLED', 'UNRESOLVABLE') " +
+            "AND t.dueTime BETWEEN :now AND :warningTime")
+    List<Ticket> findTicketsDueSoon(@Param("now") LocalDateTime now, @Param("warningTime") LocalDateTime warningTime);
+
+    // Đếm tổng số ticket đang bị quá hạn (SLA)
+    long countByIsOverdueTrueAndIsDeletedFalse();
 }

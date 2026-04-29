@@ -60,11 +60,16 @@ public class DashboardService {
             avgProcessingTime = 0.0;
         }
 
+        // 👇 5. Đếm số lượng ticket vi phạm SLA (Quá hạn)
+        long overdueCount = ticketRepository.countByIsOverdueTrueAndIsDeletedFalse();
+
+
         return DashboardResponse.builder()
                 .ticketsByStatus(ticketsByStatus)
                 .devicesByStatus(devicesByStatus)
                 .topDefectiveDevices(defectiveDevices)
                 .averageProcessingTimeHours(Math.round(avgProcessingTime * 100.0) / 100.0)
+                .overdueTicketsCount(overdueCount)
                 .build();
     }
 }

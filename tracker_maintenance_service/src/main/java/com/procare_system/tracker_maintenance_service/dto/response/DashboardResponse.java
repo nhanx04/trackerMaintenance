@@ -17,5 +17,6 @@ public class DashboardResponse {
     private List<DeviceDefectStats> topDefectiveDevices;
 
     private Double averageProcessingTimeHours;
+    private Long overdueTicketsCount;
 }
 

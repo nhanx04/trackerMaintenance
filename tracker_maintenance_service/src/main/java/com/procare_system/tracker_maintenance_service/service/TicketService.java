@@ -40,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -144,7 +145,7 @@ public class TicketService {
         return ticketMapper.toTicketResponse(ticket);
     }
 
-    public Page<TicketResponse> getTickets(String title, TicketStatus status, TicketPriority priority, String deviceId, int page, int size) {
+    public Page<TicketResponse> getTickets(String title, TicketStatus status, TicketPriority priority, String deviceId, Boolean isOverdue, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         Specification<Ticket> spec = (root, query, cb) -> {
@@ -168,6 +169,10 @@ public class TicketService {
             }
             if (StringUtils.hasText(deviceId)) {
                 predicates.add(cb.equal(root.get("deviceId"), deviceId));
+            }
+
+            if (isOverdue != null) {
+                predicates.add(cb.equal(root.get("isOverdue"), isOverdue));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -229,20 +234,29 @@ public class TicketService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthority('TICKET_ASSIGN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public TicketResponse assignTechnician(String id, AssignRequest request) {
         Ticket ticket = findActiveTicket(id);
         validateStatusTransition(ticket.getStatus(), TicketStatus.ASSIGNED);
 
         ticket.setAssignedTechnicianId(request.getTechnicianId());
         ticket.setStatus(TicketStatus.ASSIGNED);
+
+        // Cấu hình: HIGH = 24h, MEDIUM = 48h, LOW = 72h
+        long slaHours = switch (ticket.getPriority()) {
+            case HIGH -> 24;
+            case MEDIUM -> 48;
+            case LOW -> 72;
+        };
+        ticket.setDueTime(LocalDateTime.now().plusHours(slaHours));
+        ticket.setOverdue(false); // Reset cờ overdue nếu assign lại
+
         ticketRepository.save(ticket);
 
-        // 👇 TRIGGER: Manager assign -> Báo cho Technician
         notifyUser(
                 request.getTechnicianId(),
                 "Bạn được phân công Ticket mới",
-                "Bạn vừa được giao xử lý ticket: " + ticket.getTitle(),
+                "Bạn vừa được giao xử lý ticket: " + ticket.getTitle() + ". Deadline: " + slaHours + "h",
                 NotificationType.ASSIGN_TECHNICIAN,
                 ticket.getId()
         );

@@ -34,4 +34,7 @@ public class TicketResponse {
 
     List<TicketImageResponse> beforeImages;
     List<TicketImageResponse> afterImages;
+
+    LocalDateTime dueTime;
+    boolean isOverdue;
 }
