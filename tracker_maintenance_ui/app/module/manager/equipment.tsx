@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui-custom/PageHeader'
 import { ConfirmDialog } from '@/components/ui-custom/ConfirmDialog'
 import { EquipmentCard } from '@/components/equipment/EquipmentCard'
 import { EquipmentFormDialog } from '@/components/equipment/EquipmentFormDialog'
+import { QRCodeModal } from '@/components/equipment/QRCodeModal'
 import { equipmentApi } from '@/lib/equipmentApi'
 import type { Equipment, EquipmentStatus } from '@/types/equipment'
 
@@ -21,6 +22,7 @@ export default function ManagerEquipmentPage() {
   const [editItem, setEditItem] = useState<Equipment | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Equipment | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [qrTarget, setQrTarget] = useState<Equipment | null>(null)
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -142,6 +144,7 @@ export default function ManagerEquipmentPage() {
             <EquipmentCard
               key={equipment.id}
               equipment={equipment}
+              onQRCode={setQrTarget}
               onEdit={(item) => {
                 setEditItem(item)
                 setFormOpen(true)
@@ -151,6 +154,9 @@ export default function ManagerEquipmentPage() {
           ))}
         </div>
       )}
+
+      {/* QR Code Modal */}
+      <QRCodeModal equipment={qrTarget} onClose={() => setQrTarget(null)} />
 
       <EquipmentFormDialog
         open={formOpen}

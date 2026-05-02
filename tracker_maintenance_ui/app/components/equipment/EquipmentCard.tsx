@@ -1,4 +1,5 @@
 import { FiEdit2, FiEye, FiImage, FiMapPin, FiTrash2 } from 'react-icons/fi'
+import { MdQrCode2 } from 'react-icons/md'
 import { Link } from 'react-router'
 
 import type { Equipment, EquipmentStatus } from '@/types/equipment'
@@ -8,6 +9,7 @@ type EquipmentCardProps = {
   equipment: Equipment
   onEdit: (equipment: Equipment) => void
   onDelete: (equipment: Equipment) => void
+  onQRCode?: (equipment: Equipment) => void
 }
 
 const statusStyles: Record<EquipmentStatus, string> = {
@@ -16,7 +18,7 @@ const statusStyles: Record<EquipmentStatus, string> = {
   BROKEN: 'bg-rose-100 text-rose-700'
 }
 
-export function EquipmentCard({ equipment, onEdit, onDelete }: EquipmentCardProps) {
+export function EquipmentCard({ equipment, onEdit, onDelete, onQRCode }: EquipmentCardProps) {
   return (
     <article className='overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900'>
       <div className='aspect-[4/3] rounded-t-2xl bg-slate-100 p-4 dark:bg-slate-800'>
@@ -47,24 +49,35 @@ export function EquipmentCard({ equipment, onEdit, onDelete }: EquipmentCardProp
           </span>
         </div>
 
-        <div className='flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800'>
+        <div className='flex flex-nowrap items-center gap-1 border-t border-slate-100 pt-3 dark:border-slate-800'>
           <Link
             to={`/manager/equipment/${equipment.id}`}
-            className='inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
+            className='inline-flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
           >
-            <FiEye className='h-3.5 w-3.5' /> View
+            <FiEye className='h-3 w-3' /> View
           </Link>
+
+          {onQRCode && (
+            <button
+              onClick={() => onQRCode(equipment)}
+              className='inline-flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-500/10'
+            >
+              <MdQrCode2 className='h-3 w-3' /> QR
+            </button>
+          )}
+
           <button
             onClick={() => onEdit(equipment)}
-            className='inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50'
+            className='inline-flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50'
           >
-            <FiEdit2 className='h-3.5 w-3.5' /> Edit
+            <FiEdit2 className='h-3 w-3' /> Edit
           </button>
+
           <button
             onClick={() => onDelete(equipment)}
-            className='inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50'
+            className='inline-flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50'
           >
-            <FiTrash2 className='h-3.5 w-3.5' /> Delete
+            <FiTrash2 className='h-3 w-3' /> Delete
           </button>
         </div>
       </div>

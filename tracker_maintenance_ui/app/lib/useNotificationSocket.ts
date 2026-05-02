@@ -33,7 +33,7 @@ export function useNotificationSocket({ onNotification }: Options) {
 
       // SockJS negotiation — dùng XHR streaming endpoint trực tiếp
       const baseUrl = API_BASE_URL.replace(/\/$/, '')
-      const sockUrl = `${baseUrl}/ws-notifications`
+      const sockUrl = `${baseUrl}/ws-notifications?token=${token}`
 
       // SockJS tạo WebSocket tới /ws-notifications/info rồi chọn transport.
       // Cách đơn giản nhất: load SockJS từ CDN qua dynamic import hoặc dùng
