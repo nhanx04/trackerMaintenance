@@ -44,7 +44,9 @@ public enum ErrorCode {
     PERMISSION_NOT_FOUND( "Permission not found", HttpStatus.NOT_FOUND),
     ROLE_NOT_FOUND( "Role not found", HttpStatus.NOT_FOUND),
     SCHEDULE_NOT_FOUND( "Schedule not found", HttpStatus.NOT_FOUND),
-    SCHEDULE_CANNOT_MODIFY( "Only PENDING schedules can be modified", HttpStatus.BAD_REQUEST)
+    SCHEDULE_CANNOT_MODIFY( "Only PENDING schedules can be modified", HttpStatus.BAD_REQUEST),
+    DEVICE_NOT_FOUND( "Device not found", HttpStatus.NOT_FOUND),
+    QR_CODE_GENERATION_FAILED( "Failed to generate QR code", HttpStatus.INTERNAL_SERVER_ERROR)
     ;
 
     ErrorCode( String message, HttpStatus statusCode) {

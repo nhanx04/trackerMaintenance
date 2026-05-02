@@ -13,4 +13,6 @@ public interface DeviceRepository extends JpaRepository<Device, Long>, JpaSpecif
     boolean existsByCode(String code);
     @Query("SELECT d.status, COUNT(d) FROM Device d WHERE d.isDeleted = false GROUP BY d.status")
     List<Object[]> countDevicesByStatus();
+
+    java.util.Optional<Device> findByCodeAndIsDeletedFalse(String code);
 }
