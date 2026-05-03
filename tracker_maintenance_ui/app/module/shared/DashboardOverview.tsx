@@ -14,6 +14,9 @@ import { DataTableWrapper } from '@/components/ui-custom/DataTableWrapper'
 import { PageHeader } from '@/components/ui-custom/PageHeader'
 import { StatCard } from '@/components/ui-custom/StatCard'
 import { getDashboardSummary, type DashboardSummary } from '@/lib/dashboardApi'
+import { ticketApi } from '@/lib/ticketApi'
+import { isTicketOverdue } from '@/lib/ticketUtils'
+import type { Ticket } from '@/types/ticket'
 import { AppLayout } from '@/layouts/AppLayout'
 
 const today = new Date().toISOString().slice(0, 10)
@@ -96,13 +99,18 @@ export function DashboardOverview({ roleLabel }: { roleLabel: string }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<DashboardSummary | null>(null)
+  const [overdueTickets, setOverdueTickets] = useState<Ticket[]>([])
 
   const fetchDashboard = async () => {
     setLoading(true)
     setError(null)
     try {
-      const summary = await getDashboardSummary({ startDate, endDate })
+      const [summary, overduePage] = await Promise.all([
+        getDashboardSummary({ startDate, endDate }),
+        ticketApi.getAll({ page: 0, size: 5, isOverdue: true })
+      ])
       setData(summary)
+      setOverdueTickets(overduePage.content ?? [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
     } finally {
@@ -229,9 +237,9 @@ export function DashboardOverview({ roleLabel }: { roleLabel: string }) {
           className='border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/60 dark:bg-emerald-900/10'
         />
         <StatCard
-          title='Cancelled'
-          value={ticketStats.cancelled}
-          icon={FiXCircle}
+          title='Overdue Tickets'
+          value={overdueTickets.length}
+          icon={FiAlertTriangle}
           className='border-rose-200 bg-rose-50/60 dark:border-rose-900/60 dark:bg-rose-900/10'
         />
       </section>
@@ -311,6 +319,56 @@ export function DashboardOverview({ roleLabel }: { roleLabel: string }) {
           icon={FiClock}
           className='border-violet-200 bg-violet-50/70 dark:border-violet-900/60 dark:bg-violet-900/10'
         />
+      </section>
+
+      <section className='mt-3'>
+        <DataTableWrapper title='Overdue Tickets'>
+          <div className='overflow-x-auto'>
+            <table className='min-w-full text-left text-sm'>
+              <thead>
+                <tr className='border-b border-slate-200 text-slate-500 dark:border-slate-800 dark:text-slate-400'>
+                  <th className='px-3 py-3 font-medium'>Title</th>
+                  <th className='px-3 py-3 font-medium'>Device</th>
+                  <th className='px-3 py-3 font-medium'>Due Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td className='px-3 py-4 text-slate-500 dark:text-slate-400' colSpan={3}>
+                      Loading overdue tickets...
+                    </td>
+                  </tr>
+                ) : overdueTickets.length === 0 ? (
+                  <tr>
+                    <td className='px-3 py-4 text-slate-500 dark:text-slate-400' colSpan={3}>
+                      No overdue tickets.
+                    </td>
+                  </tr>
+                ) : (
+                  overdueTickets.map((ticket) => (
+                    <tr key={ticket.id} className='border-b border-slate-100 dark:border-slate-800/80'>
+                      <td className='px-3 py-3 font-medium text-slate-800 dark:text-slate-100'>
+                        <div className='flex items-center gap-2'>
+                          <span>{ticket.title}</span>
+                          {isTicketOverdue(ticket) && (
+                            <span className='inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/20 dark:text-rose-300'>
+                              Overdue
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className='px-3 py-3 text-slate-600 dark:text-slate-300'>{ticket.deviceId}</td>
+                      <td className='px-3 py-3 text-slate-600 dark:text-slate-300'>
+                        {ticket.dueTime ? new Date(ticket.dueTime).toLocaleString('vi-VN') : '—'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </DataTableWrapper>
       </section>
     </AppLayout>
   )

@@ -52,6 +52,8 @@ export interface Ticket {
   createdAt: string
   updatedAt: string
   unresolvableReason?: string
+  dueTime?: string
+  isOverdue?: boolean
 }
 
 export type TicketPage = PageResult<Ticket>
@@ -79,6 +81,7 @@ export interface TicketFilter {
   status?: TicketStatus | ''
   priority?: TicketPriority | ''
   deviceId?: string
+  isOverdue?: boolean
   page: number
   size: number
 }
