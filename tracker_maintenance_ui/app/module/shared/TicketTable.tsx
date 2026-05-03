@@ -1,5 +1,5 @@
 import { cn } from '@/lib/cn'
-import { formatDate, priorityLabel, priorityStyle, statusLabel, statusStyle } from '@/lib/ticketUtils'
+import { formatDate, isTicketOverdue, priorityLabel, priorityStyle, statusLabel, statusStyle } from '@/lib/ticketUtils'
 import type { Ticket } from '@/types/ticket'
 
 type ActionStyle = 'blue' | 'emerald' | 'rose'
@@ -67,8 +67,16 @@ export function TicketTable({
                 .map((w) => w[0]?.toUpperCase())
                 .join('') || 'UN'
 
+            const overdue = isTicketOverdue(ticket)
+
             return (
-              <tr key={ticket.id} className='group transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40'>
+              <tr
+                key={ticket.id}
+                className={cn(
+                  'group transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40',
+                  overdue && 'bg-red-100 dark:bg-rose-900/20'
+                )}
+              >
                 <td className='py-3 pr-4'>
                   <p className='font-medium text-slate-900 dark:text-white'>{ticket.title}</p>
                   {ticket.description && (
@@ -79,14 +87,21 @@ export function TicketTable({
                 </td>
 
                 <td className='py-3 pr-4'>
-                  <span
-                    className={cn(
-                      'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
-                      statusStyle[ticket.status]
+                  <div className='flex flex-wrap items-center gap-1.5'>
+                    <span
+                      className={cn(
+                        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
+                        statusStyle[ticket.status]
+                      )}
+                    >
+                      {statusLabel[ticket.status]}
+                    </span>
+                    {overdue && (
+                      <span className='inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/20 dark:text-rose-300'>
+                        Overdue
+                      </span>
                     )}
-                  >
-                    {statusLabel[ticket.status]}
-                  </span>
+                  </div>
                 </td>
 
                 <td className='py-3 pr-4'>

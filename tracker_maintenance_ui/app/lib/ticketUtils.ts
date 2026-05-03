@@ -11,6 +11,15 @@ export const statusLabel: Record<BackendStatus, string> = {
   CANCELLED: 'Cancelled'
 }
 
+export const isTicketOverdue = (ticket: { status: BackendStatus; dueTime?: string; isOverdue?: boolean }) => {
+  if (ticket.isOverdue) return true
+  if (!ticket.dueTime) return false
+  const dueMillis = new Date(ticket.dueTime).getTime()
+  if (Number.isNaN(dueMillis)) return false
+  const closedStatuses: BackendStatus[] = ['DONE', 'CANCELLED', 'UNRESOLVABLE']
+  return !closedStatuses.includes(ticket.status) && dueMillis < Date.now()
+}
+
 // Map backend status → Tailwind badge style
 export const statusStyle: Record<BackendStatus, string> = {
   PENDING: 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/20 dark:text-blue-300',

@@ -80,8 +80,7 @@ public class TicketService {
         }
     }
 
-
-    //  Helper: lấy thông tin user
+    // Helper: lấy thông tin user
     private Authentication currentAuth() {
         return SecurityContextHolder.getContext().getAuthentication();
     }
@@ -133,8 +132,7 @@ public class TicketService {
                 "Ticket mới yêu cầu xử lý",
                 "Một ticket mới (" + ticket.getTitle() + ") vừa được tạo.",
                 NotificationType.CREATE_TICKET,
-                ticket.getId()
-        );
+                ticket.getId());
 
         return ticketMapper.toTicketResponse(ticket);
     }
@@ -145,7 +143,8 @@ public class TicketService {
         return ticketMapper.toTicketResponse(ticket);
     }
 
-    public Page<TicketResponse> getTickets(String title, TicketStatus status, TicketPriority priority, String deviceId, Boolean isOverdue, int page, int size) {
+    public Page<TicketResponse> getTickets(String title, TicketStatus status, TicketPriority priority, String deviceId,
+            Boolean isOverdue, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         Specification<Ticket> spec = (root, query, cb) -> {
@@ -172,7 +171,19 @@ public class TicketService {
             }
 
             if (isOverdue != null) {
-                predicates.add(cb.equal(root.get("isOverdue"), isOverdue));
+                LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+
+                Predicate closedStatuses = root.get("status").in(TicketStatus.DONE, TicketStatus.CANCELLED,
+                        TicketStatus.UNRESOLVABLE);
+                Predicate hasDueTime = cb.isNotNull(root.get("dueTime"));
+                Predicate overdueByDueTime = cb.lessThan(root.get("dueTime"), now);
+
+                if (isOverdue) {
+                    predicates.add(cb.and(hasDueTime, overdueByDueTime, cb.not(closedStatuses)));
+                } else {
+                    predicates.add(cb.or(cb.isNull(root.get("dueTime")),
+                            cb.greaterThanOrEqualTo(root.get("dueTime"), now), closedStatuses));
+                }
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -217,8 +228,10 @@ public class TicketService {
     @PreAuthorize("hasAuthority('TICKET_UPDATE')")
     public TicketResponse cancelTicket(String id) {
         Ticket ticket = findActiveTicket(id);
-        if (ticket.getStatus() == TicketStatus.CANCELLED) throw new AppException(ErrorCode.TICKET_ALREADY_CANCELLED);
-        if (ticket.getStatus() == TicketStatus.DONE) throw new AppException(ErrorCode.TICKET_CANNOT_CANCEL);
+        if (ticket.getStatus() == TicketStatus.CANCELLED)
+            throw new AppException(ErrorCode.TICKET_ALREADY_CANCELLED);
+        if (ticket.getStatus() == TicketStatus.DONE)
+            throw new AppException(ErrorCode.TICKET_CANNOT_CANCEL);
 
         ticket.setStatus(TicketStatus.CANCELLED);
         ticketRepository.save(ticket);
@@ -258,8 +271,7 @@ public class TicketService {
                 "Bạn được phân công Ticket mới",
                 "Bạn vừa được giao xử lý ticket: " + ticket.getTitle() + ". Deadline: " + slaHours + "h",
                 NotificationType.ASSIGN_TECHNICIAN,
-                ticket.getId()
-        );
+                ticket.getId());
 
         return ticketMapper.toTicketResponse(ticket);
     }
@@ -282,8 +294,7 @@ public class TicketService {
                 "Technician đã tiếp nhận Ticket",
                 "Technician đã bắt đầu xử lý ticket: " + ticket.getTitle(),
                 NotificationType.ACCEPT_TICKET,
-                ticket.getId()
-        );
+                ticket.getId());
 
         return ticketMapper.toTicketResponse(ticket);
     }
@@ -322,7 +333,8 @@ public class TicketService {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TECHNICIAN')")
     public List<TicketProgressResponse> getTicketProgressHistory(String ticketId) {
         List<TicketProgress> progresses = ticketProgressRepository.findByTicketIdOrderByCreatedAtDesc(ticketId);
-        List<TicketImage> allProgressImages = ticketImageRepository.findAllByTicketIdAndImageType(ticketId, ImageType.PROGRESS);
+        List<TicketImage> allProgressImages = ticketImageRepository.findAllByTicketIdAndImageType(ticketId,
+                ImageType.PROGRESS);
 
         Map<String, List<TicketImage>> imagesByProgressId = allProgressImages.stream()
                 .filter(img -> img.getTicketProgressId() != null)
@@ -401,8 +413,7 @@ public class TicketService {
                 "Ticket đã hoàn tất, chờ xác nhận",
                 "Technician đã hoàn thành ticket: " + ticket.getTitle() + ". Vui lòng kiểm tra và xác nhận.",
                 NotificationType.COMPLETE_TICKET,
-                ticket.getId()
-        );
+                ticket.getId());
 
         return ticketMapper.toTicketResponse(ticket);
     }
@@ -428,8 +439,7 @@ public class TicketService {
                 "Sự cố không thể xử lý",
                 "Technician báo cáo không thể xử lý ticket: " + ticket.getTitle() + ". Lý do: " + reason,
                 NotificationType.CANNOT_FIX,
-                ticket.getId()
-        );
+                ticket.getId());
 
         return ticketMapper.toTicketResponse(ticket);
     }
@@ -453,8 +463,7 @@ public class TicketService {
                 "Ticket đã hoàn tất",
                 "Yêu cầu hỗ trợ của bạn (" + ticket.getTitle() + ") đã được giải quyết xong.",
                 NotificationType.CONFIRM_COMPLETION,
-                ticket.getId()
-        );
+                ticket.getId());
 
         return ticketMapper.toTicketResponse(ticket);
     }
@@ -476,10 +485,13 @@ public class TicketService {
     }
 
     private void checkReadAccess(Ticket ticket) {
-        if (isAdminOrManager()) return;
+        if (isAdminOrManager())
+            return;
         String uid = currentUserId();
-        if (hasRole("TECHNICIAN") && uid.equals(ticket.getAssignedTechnicianId())) return;
-        if (hasRole("REPORTER")   && uid.equals(ticket.getCreatedByUserId()))    return;
+        if (hasRole("TECHNICIAN") && uid.equals(ticket.getAssignedTechnicianId()))
+            return;
+        if (hasRole("REPORTER") && uid.equals(ticket.getCreatedByUserId()))
+            return;
         throw new AppException(ErrorCode.ACCESS_DENIED);
     }
 }

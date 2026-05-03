@@ -58,6 +58,7 @@ export const ticketApi = {
     if (filter.status) p.set('status', filter.status)
     if (filter.priority) p.set('priority', filter.priority)
     if (filter.deviceId) p.set('deviceId', filter.deviceId)
+    if (typeof filter.isOverdue === 'boolean') p.set('isOverdue', String(filter.isOverdue))
     p.set('page', String(filter.page))
     p.set('size', String(filter.size))
     return req<TicketPage>(`/api/tickets?${p}`)
