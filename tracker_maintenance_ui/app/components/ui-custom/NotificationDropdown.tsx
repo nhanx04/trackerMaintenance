@@ -5,9 +5,10 @@ import { cn } from '@/lib/cn'
 import { notificationApi } from '@/lib/notificationApi'
 import { useNotificationSocket } from '@/lib/useNotificationSocket'
 import type { Notification } from '@/types/notification'
+import { getStoredAuth } from '@/lib/api'
 
 function timeAgo(iso: string): string {
-  const date = new Date(iso + 'Z')
+  const date = new Date(iso)
   const diff = Date.now() - date.getTime()
 
   const mins = Math.floor(diff / 60000)
@@ -48,8 +49,10 @@ export function NotificationDropdown() {
     return () => document.removeEventListener('mousedown', onClickOutside)
   }, [])
 
-  // Load unread count ban đầu từ REST
   useEffect(() => {
+    const auth = getStoredAuth()
+    if (!auth?.token) return
+
     void notificationApi
       .getUnreadCount()
       .then(setUnreadCount)
@@ -59,14 +62,17 @@ export function NotificationDropdown() {
   async function handleOpen() {
     const next = !open
     setOpen(next)
-    if (next && notifications.length === 0) {
+    if (next) {
       setLoading(true)
       try {
         const page = await notificationApi.getAll(0, 20)
-        setNotifications(page.content)
+        setNotifications((prev) => {
+          // merge tránh duplicate
+          const map = new Map(prev.map((n) => [n.id, n]))
+          page.content.forEach((n) => map.set(n.id, n))
+          return Array.from(map.values())
+        })
         setUnreadCount(page.content.filter((n) => !n.isRead).length)
-      } catch {
-        // silent
       } finally {
         setLoading(false)
       }
@@ -87,7 +93,7 @@ export function NotificationDropdown() {
 
   async function handleMarkAllAsRead() {
     try {
-      await notificationApi.markAllAsRead()
+      await notificationApi.markAllRead()
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
       setUnreadCount(0)
     } catch {

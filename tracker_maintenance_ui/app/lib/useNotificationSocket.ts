@@ -19,86 +19,88 @@ export function useNotificationSocket({ onNotification }: Options) {
   }, [onNotification])
 
   useEffect(() => {
-    const auth = getAuth()
-    if (!auth?.id || !auth?.token) return
-
-    const userId = auth.id
-    const token = auth.token
+    let destroyed = false
     let ws: WebSocket | null = null
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-    let destroyed = false
 
-    function connect() {
-      if (destroyed) return
+    function init() {
+      const auth = getAuth()
+      if (!auth?.id || !auth?.token) return
 
-      // SockJS negotiation — dùng XHR streaming endpoint trực tiếp
-      const baseUrl = API_BASE_URL.replace(/\/$/, '')
-      const sockUrl = `${baseUrl}/ws-notifications?token=${token}`
+      const userId = auth.id
+      const token = auth.token
 
-      // SockJS tạo WebSocket tới /ws-notifications/info rồi chọn transport.
-      // Cách đơn giản nhất: load SockJS từ CDN qua dynamic import hoặc dùng
-      // WebSocket trực tiếp nếu server hỗ trợ (Spring Boot có cả hai).
-      // Ở đây ta dùng SockJS qua script tag đã được load sẵn (xem ghi chú bên dưới).
+      function connect() {
+        if (destroyed) return
 
-      // Kiểm tra SockJS đã available chưa (load từ CDN trong index.html)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const SockJSConstructor = (window as any).SockJS as (new (url: string) => WebSocket) | undefined
+        // 🔥 FIX: đóng socket cũ trước khi tạo mới
+        if (ws) {
+          ws.close()
+        }
 
-      if (!SockJSConstructor) {
-        console.warn('[WS] SockJS chưa load, thử lại sau 3s')
-        reconnectTimer = setTimeout(connect, 3000)
-        return
-      }
+        const baseUrl = API_BASE_URL.replace(/\/$/, '')
+        const sockUrl = `${baseUrl}/ws-notifications?token=${token}`
 
-      ws = new SockJSConstructor(sockUrl)
-
-      ws.onopen = () => {
-        // Gửi STOMP CONNECT frame
-        ws!.send(`CONNECT\nAccept-Version:1.1,1.0\nHeart-Beat:0,0\nAuthorization:Bearer ${token}\n\n\0`)
-      }
-
-      ws.onmessage = (event: MessageEvent<string>) => {
-        const raw: string = event.data
-
-        // CONNECTED frame → gửi SUBSCRIBE
-        if (raw.startsWith('CONNECTED')) {
-          ws!.send(`SUBSCRIBE\nid:sub-0\ndestination:/topic/notifications/${userId}\n\n\0`)
+        const SockJSConstructor = (window as any).SockJS
+        if (!SockJSConstructor) {
+          reconnectTimer = setTimeout(connect, 3000)
           return
         }
 
-        // MESSAGE frame → parse body
-        if (raw.startsWith('MESSAGE')) {
-          const nullIdx = raw.indexOf('\0')
-          const body = nullIdx !== -1 ? raw.slice(0, nullIdx) : raw
-          const headerEnd = body.indexOf('\n\n')
-          const payload = headerEnd !== -1 ? body.slice(headerEnd + 2) : ''
-          try {
-            const notification = JSON.parse(payload) as Notification
-            onNotificationRef.current(notification)
-          } catch {
-            // malformed — bỏ qua
+        ws = new SockJSConstructor(sockUrl)
+        const socket = ws!
+
+        socket.onopen = () => {
+          socket.send(`CONNECT\naccept-version:1.1\nheart-beat:0,0\nAuthorization:Bearer ${token}\n\n\0`)
+        }
+
+        socket.onmessage = (event) => {
+          const raw = event.data
+
+          if (raw.startsWith('CONNECTED')) {
+            socket.send(`SUBSCRIBE\nid:sub-0\ndestination:/topic/notifications/${userId}\n\n\0`)
+            return
+          }
+
+          if (raw.startsWith('MESSAGE')) {
+            const nullIdx = raw.indexOf('\0')
+            const body = nullIdx !== -1 ? raw.slice(0, nullIdx) : raw
+            const headerEnd = body.indexOf('\n\n')
+            const payload = headerEnd !== -1 ? body.slice(headerEnd + 2) : ''
+
+            try {
+              const notification = JSON.parse(payload)
+              onNotificationRef.current(notification)
+            } catch {}
           }
         }
-      }
 
-      ws.onclose = () => {
-        if (!destroyed) {
-          reconnectTimer = setTimeout(connect, 5000)
+        socket.onclose = () => {
+          if (!destroyed) {
+            reconnectTimer = setTimeout(connect, 5000)
+          }
+        }
+
+        socket.onerror = () => {
+          socket.close()
         }
       }
 
-      ws.onerror = () => {
-        ws?.close()
-      }
+      connect()
     }
 
-    connect()
+    init()
 
     return () => {
       destroyed = true
-      if (reconnectTimer) clearTimeout(reconnectTimer)
-      ws?.close()
+
+      if (ws) {
+        ws.close()
+      }
+
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer)
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 }

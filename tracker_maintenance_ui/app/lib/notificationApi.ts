@@ -48,5 +48,9 @@ export const notificationApi = {
     }
   },
 
-  markAllAsRead: (): Promise<void> => req<void>('/api/notifications/read-all', { method: 'PUT' })
+  markAllRead: async () => {
+    await authFetch('/api/notifications/read-all', {
+      method: 'PUT'
+    })
+  }
 }
