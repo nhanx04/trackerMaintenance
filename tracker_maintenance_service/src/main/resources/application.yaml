@@ -8,14 +8,13 @@ spring:
     multipart:
       enabled: true
       max-file-size: 10MB
-      max-request-size: 100MB   # tối đa 10 file × 10MB
+      max-request-size: 100MB # tối đa 10 file × 10MB
 
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
-
 
   jpa:
     hibernate:
@@ -31,7 +30,6 @@ jwt:
   valid-duration: 300 # in second
   refreshable-duration: 1800 # in second
 
-
 cloudflare:
   r2:
     endpoint: https://35c1e2b268d20d1a9ea899121b159d74.r2.cloudflarestorage.com/tracker-maintennance
@@ -40,3 +38,6 @@ cloudflare:
     accessKey: ${APP_R2_ACCESS_KEY_ID}
     secretKey: ${APP_R2_SECRET_ACCESS_KEY}
     region: auto
+
+app:
+  base-url: ${APP_BASE_URL}

@@ -33,6 +33,13 @@ public class DeviceController {
                 .build();
     }
 
+    @GetMapping("/public/{id}")
+    public ApiResponse<DeviceResponse> getPublicDevice(@PathVariable Long id) {
+        return ApiResponse.<DeviceResponse>builder()
+                .result(deviceService.getDeviceById(id))
+                .build();
+    }
+
     @GetMapping
     public ApiResponse<Page<DeviceResponse>> getDevices(
             @RequestParam(required = false) String name,

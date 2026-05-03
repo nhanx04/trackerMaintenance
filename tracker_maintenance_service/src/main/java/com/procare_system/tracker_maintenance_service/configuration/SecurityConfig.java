@@ -42,6 +42,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                                 .requestMatchers("/ws-notifications/**").permitAll()
+                                                .requestMatchers("/api/devices/public/**").permitAll()
                                                 .anyRequest().authenticated());
 //                request-> request.anyRequest().permitAll());
 

@@ -9,6 +9,7 @@ import com.procare_system.tracker_maintenance_service.util.QRCodeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import java.util.UUID;
 
 import java.io.IOException;
 
@@ -18,7 +19,7 @@ public class DeviceQRCodeService {
 
     private final DeviceRepository deviceRepository;
 
-    @Value("${app.base-url:http://localhost:8080}")
+    @Value("${app.base-url}")
     private String baseUrl;
 
     private static final int QR_WIDTH  = 300;
@@ -43,7 +44,8 @@ public class DeviceQRCodeService {
 
 
     private String buildDeviceUrl(Long deviceId) {
-        return baseUrl + "/api/devices/" + deviceId;
+        
+        return baseUrl + "/public/equipment/" + deviceId;
     }
 
     private byte[] encodeToQR(String content) {

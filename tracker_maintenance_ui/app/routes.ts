@@ -21,5 +21,6 @@ export default [
   route('technician/my-tickets', 'module/technician/myTickets.tsx'),
   route('technician/available-tickets', 'module/technician/availableTickets.tsx'),
   route('reporter/my-tickets', 'module/reporter/myTickets.tsx'),
-  route('reporter/create-ticket', 'module/reporter/createTicket.tsx')
+  route('reporter/create-ticket', 'module/reporter/createTicket.tsx'),
+  route('public/equipment/:id', 'module/public/equipmentDetail.tsx')
 ] satisfies RouteConfig
