@@ -15,7 +15,11 @@ export async function loader({ params }: any) {
   return json.result
 }
 
-function PublicMaintenanceHistoryTab({ deviceId }) {
+type Props = {
+  deviceId: string
+}
+
+function PublicMaintenanceHistoryTab({ deviceId }: Props) {
   const [history, setHistory] = useState([])
 
   useEffect(() => {
