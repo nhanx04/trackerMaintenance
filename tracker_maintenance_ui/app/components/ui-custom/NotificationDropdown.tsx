@@ -7,9 +7,29 @@ import { useNotificationSocket } from '@/lib/useNotificationSocket'
 import type { Notification } from '@/types/notification'
 import { getStoredAuth } from '@/lib/api'
 
+function parseServerDate(value: string): Date {
+  // Backend often returns LocalDateTime without timezone, e.g. "2026-05-02T09:30:00"
+  // In production server (UTC), this would be interpreted as local browser time and causes drift.
+  // If timezone is missing, treat it as UTC by appending 'Z'.
+  const hasTimezone = /[zZ]|[+-][0-9]{2}:[0-9]{2}$/.test(value)
+  const normalized = hasTimezone ? value : `${value}Z`
+  return new Date(normalized)
+}
+
 function timeAgo(iso: string): string {
-  const date = new Date(iso)
+  const date = parseServerDate(iso)
   const diff = Date.now() - date.getTime()
+
+  if (!Number.isFinite(diff)) return 'Just now'
+
+  if (diff < 0) {
+    const minsFuture = Math.floor(Math.abs(diff) / 60000)
+    if (minsFuture < 1) return 'Just now'
+    if (minsFuture < 60) return `in ${minsFuture}m`
+    const hrsFuture = Math.floor(minsFuture / 60)
+    if (hrsFuture < 24) return `in ${hrsFuture}h`
+    return `in ${Math.floor(hrsFuture / 24)}d`
+  }
 
   const mins = Math.floor(diff / 60000)
   if (mins < 1) return 'Just now'
