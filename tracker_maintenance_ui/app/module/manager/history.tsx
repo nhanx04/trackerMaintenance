@@ -12,6 +12,10 @@ type ScheduleHistoryProps = {
   equipmentMap: Record<string, string>
 }
 
+type MaintenanceHistoryTabProps = {
+  deviceId: string
+}
+
 export default function ManagerHistoryPage() {
   const [history, setHistory] = useState<MaintenanceSchedule[]>([])
   const [equipment, setEquipment] = useState<Equipment[]>([])
@@ -104,5 +108,43 @@ export function MaintenanceScheduleHistoryTable({ history, equipmentMap }: Sched
         </table>
       </div>
     </section>
+  )
+}
+
+export function MaintenanceHistoryTab({ deviceId }: MaintenanceHistoryTabProps) {
+  const [history, setHistory] = useState<MaintenanceSchedule[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    void loadData()
+  }, [deviceId])
+
+  async function loadData() {
+    setLoading(true)
+    setError(null)
+    try {
+      const historyPage = await scheduleApi.getHistory(0, 200, deviceId)
+      setHistory(historyPage.content)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load maintenance history')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const equipmentMap = useMemo(() => ({}), [])
+
+  if (loading) {
+    return <div className='h-32 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800' />
+  }
+
+  return (
+    <>
+      {error && (
+        <div className='mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>{error}</div>
+      )}
+      <MaintenanceScheduleHistoryTable history={history} equipmentMap={equipmentMap} />
+    </>
   )
 }
