@@ -24,12 +24,12 @@ export const roleMenu: Record<UserRole, NavItem[]> = {
     { label: 'Equipment', path: '/manager/equipment', icon: FiHardDrive },
     { label: 'Tickets', path: '/manager/tickets', icon: FiClipboard },
     { label: 'Maintenance History', path: '/manager/history', icon: FiClock },
-    { label: 'Maintenance Schedule', path: '/manager/maintenance', icon: FiClock },
+    { label: 'Maintenance Schedule', path: '/manager/maintenance', icon: FiTool },
     { label: 'Reports', path: '/manager/reports', icon: FiBarChart2 }
   ],
   Technician: [
-    { label: 'My Tickets', path: '/technician/my-tickets', icon: FiTool },
-    { label: 'Available Tickets', path: '/technician/available-tickets', icon: FiClipboard }
+    { label: 'My Tickets', path: '/technician/my-tickets', icon: FiTool }
+    // { label: 'Available Tickets', path: '/technician/available-tickets', icon: FiClipboard }
   ],
   Reporter: [
     { label: 'My Tickets', path: '/reporter/my-tickets', icon: FiClipboard },

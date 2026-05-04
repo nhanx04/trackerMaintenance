@@ -29,7 +29,6 @@ export default function ManagerMaintenancePage() {
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [technicians, setTechnicians] = useState<BackendUser[]>([])
-  const [history, setHistory] = useState<MaintenanceSchedule[]>([])
   const [techQuery, setTechQuery] = useState('')
   const [techPickerOpen, setTechPickerOpen] = useState(false)
   const [equipmentQuery, setEquipmentQuery] = useState('')
@@ -102,16 +101,14 @@ export default function ManagerMaintenancePage() {
   async function loadData() {
     setLoading(true)
     try {
-      const [schedulePage, upcoming, equipmentPage, historyPage] = await Promise.all([
+      const [schedulePage, upcoming, equipmentPage] = await Promise.all([
         scheduleApi.getAll({ page: 0, size: 200 }),
         scheduleApi.getUpcoming(3),
-        equipmentApi.getAll({ page: 0, size: 200 }),
-        scheduleApi.getHistory(0, 100)
+        equipmentApi.getAll({ page: 0, size: 200 })
       ])
       setSchedules(schedulePage.content)
       setReminders(upcoming)
       setEquipment(equipmentPage.content)
-      setHistory(historyPage.content)
     } catch (error) {
       setToast(error instanceof Error ? error.message : 'Failed to load maintenance data')
     } finally {
@@ -368,47 +365,6 @@ export default function ManagerMaintenancePage() {
             </table>
           </div>
         )}
-      </section>
-
-      <section className='mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900'>
-        <div className='mb-3 flex items-center justify-between'>
-          <h2 className='text-base font-semibold'>Maintenance History</h2>
-          <p className='text-sm text-slate-500'>Completed records: {history.length}</p>
-        </div>
-
-        <div className='overflow-x-auto'>
-          <table className='min-w-full text-left text-sm'>
-            <thead>
-              <tr className='border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700'>
-                <th className='px-3 py-2'>Equipment</th>
-                <th className='px-3 py-2'>Title</th>
-                <th className='px-3 py-2'>Cycle (days)</th>
-                <th className='px-3 py-2'>Scheduled Date</th>
-                <th className='px-3 py-2'>Completed At</th>
-                <th className='px-3 py-2'>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((item) => (
-                <tr key={item.id} className='border-b border-slate-100 dark:border-slate-800'>
-                  <td className='px-3 py-2'>{equipmentMap[item.deviceId] ?? item.deviceId}</td>
-                  <td className='px-3 py-2'>{item.title}</td>
-                  <td className='px-3 py-2'>{item.cycleDays}</td>
-                  <td className='px-3 py-2'>{item.scheduledDate}</td>
-                  <td className='px-3 py-2'>{item.completedAt ? new Date(item.completedAt).toLocaleString() : '-'}</td>
-                  <td className='px-3 py-2'>{item.status}</td>
-                </tr>
-              ))}
-              {history.length === 0 && (
-                <tr>
-                  <td colSpan={6} className='px-3 py-6 text-center text-slate-500'>
-                    No maintenance history yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       </section>
 
       {equipmentPickerOpen && (

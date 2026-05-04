@@ -17,7 +17,15 @@ import type { Equipment } from '@/types/equipment'
 import type { Ticket, TicketFilter, TicketPriority, TicketStatus, UpdateTicketRequest } from '@/types/ticket'
 
 const PAGE_SIZE = 10
-const ALL_STATUSES: TicketStatus[] = ['PENDING', 'IN_PROGRESS', 'DONE', 'CANCELLED']
+const ALL_STATUSES: TicketStatus[] = [
+  'PENDING',
+  'ASSIGNED',
+  'IN_PROGRESS',
+  'WAITING_FOR_CONFIRMATION',
+  'UNRESOLVABLE',
+  'DONE',
+  'CANCELLED'
+]
 
 // ─── Confirm Delete Dialog ────────────────────────────────────────────────────
 
@@ -532,9 +540,12 @@ export default function AdminTicketsPage() {
     )
   }
 
-  const counts = {
+  const counts: Partial<Record<TicketStatus, number>> = {
     PENDING: tickets.filter((t) => t.status === 'PENDING').length,
+    ASSIGNED: tickets.filter((t) => t.status === 'ASSIGNED').length,
     IN_PROGRESS: tickets.filter((t) => t.status === 'IN_PROGRESS').length,
+    WAITING_FOR_CONFIRMATION: tickets.filter((t) => t.status === 'WAITING_FOR_CONFIRMATION').length,
+    UNRESOLVABLE: tickets.filter((t) => t.status === 'UNRESOLVABLE').length,
     DONE: tickets.filter((t) => t.status === 'DONE').length,
     CANCELLED: tickets.filter((t) => t.status === 'CANCELLED').length
   }
@@ -572,11 +583,14 @@ export default function AdminTicketsPage() {
       <div className='mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
         {(
           [
-            ['PENDING', 'New', 'text-blue-600'],
+            ['PENDING', 'Pending', 'text-blue-600'],
+            ['ASSIGNED', 'Assigned', 'text-indigo-600'],
             ['IN_PROGRESS', 'In Progress', 'text-amber-600'],
+            ['WAITING_FOR_CONFIRMATION', 'Waiting Confirm', 'text-purple-600'],
+            ['UNRESOLVABLE', 'Cannot Resolve', 'text-rose-600'],
             ['DONE', 'Completed', 'text-emerald-600'],
-            ['CANCELLED', 'Cannot Resolve', 'text-rose-600']
-          ] as ['PENDING' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED', string, string][]
+            ['CANCELLED', 'Cancelled', 'text-gray-500']
+          ] as [TicketStatus, string, string][]
         ).map(([s, label, accent]) => (
           <button
             key={s}
@@ -616,7 +630,10 @@ export default function AdminTicketsPage() {
         >
           <option value=''>All Status</option>
           <option value='PENDING'>Pending</option>
+          <option value='ASSIGNED'>Assigned</option>
           <option value='IN_PROGRESS'>In Progress</option>
+          <option value='WAITING_FOR_CONFIRMATION'>Waiting Confirm</option>
+          <option value='UNRESOLVABLE'>Cannot Resolve</option>
           <option value='DONE'>Done</option>
           <option value='CANCELLED'>Cancelled</option>
         </select>
