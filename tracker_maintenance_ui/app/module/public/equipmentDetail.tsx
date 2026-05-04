@@ -1,7 +1,7 @@
 import { useLoaderData } from 'react-router'
 import { EquipmentPublicView } from '@/components/equipment/EquipmentPublicView'
-import { useState } from 'react'
-import { MaintenanceHistoryTab } from '@/module/manager/history'
+import { useEffect, useState } from 'react'
+import { MaintenanceHistoryTab, MaintenanceScheduleHistoryTable } from '@/module/manager/history'
 import { API_BASE_URL } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { FiInfo, FiClock } from 'react-icons/fi'
@@ -13,6 +13,18 @@ export async function loader({ params }: any) {
 
   const json = await res.json()
   return json.result
+}
+
+function PublicMaintenanceHistoryTab({ deviceId }) {
+  const [history, setHistory] = useState([])
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/schedules/public/history?deviceId=${deviceId}`)
+      .then((res) => res.json())
+      .then((data) => setHistory(data.result.content))
+  }, [deviceId])
+
+  return <MaintenanceScheduleHistoryTable history={history} equipmentMap={{}} />
 }
 
 export default function PublicEquipmentDetailPage() {
@@ -55,7 +67,7 @@ export default function PublicEquipmentDetailPage() {
 
         {activeTab === 'history' && (
           <div className='p-6'>
-            <MaintenanceHistoryTab deviceId={equipment.id} />
+            <PublicMaintenanceHistoryTab deviceId={equipment.id} />
           </div>
         )}
       </main>

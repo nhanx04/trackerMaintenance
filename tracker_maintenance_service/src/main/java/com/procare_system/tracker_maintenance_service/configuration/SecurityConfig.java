@@ -43,6 +43,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                                 .requestMatchers("/ws-notifications/**").permitAll()
                                                 .requestMatchers("/api/devices/public/**").permitAll()
+                                                .requestMatchers("/api/schedules/public/**").permitAll()
                                                 .anyRequest().authenticated());
 //                request-> request.anyRequest().permitAll());
 

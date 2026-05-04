@@ -278,4 +278,24 @@ public class ScheduleService {
         return scheduleRepository.findAll(spec, pageable)
                 .map(this::toResponse);
     }
+
+    public Page<ScheduleResponse> getMaintenanceHistoryPublic(String deviceId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("completedAt").descending());
+
+        Specification<MaintenanceSchedule> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            predicates.add(cb.equal(root.get("isDeleted"), false));
+            predicates.add(cb.equal(root.get("status"), ScheduleStatus.DONE));
+
+            if (StringUtils.hasText(deviceId)) {
+                predicates.add(cb.equal(root.get("deviceId"), deviceId));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return scheduleRepository.findAll(spec, pageable)
+                .map(this::toResponse);
+    }
 }

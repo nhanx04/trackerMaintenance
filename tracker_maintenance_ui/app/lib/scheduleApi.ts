@@ -1,4 +1,4 @@
-import { authFetch } from '@/lib/api'
+import { API_BASE_URL, authFetch } from '@/lib/api'
 import type {
   CreateSchedulePayload,
   MaintenanceSchedule,
@@ -75,5 +75,11 @@ export const scheduleApi = {
     req<MaintenanceSchedule>(`/api/schedules/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload)
-    })
+    }),
+
+  getPublicHistory(page: number, size: number, deviceId: string) {
+    return fetch(`${API_BASE_URL}/api/schedules/public/history?deviceId=${deviceId}&page=${page}&size=${size}`).then(
+      (res) => res.json()
+    )
+  }
 }

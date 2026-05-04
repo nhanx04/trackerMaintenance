@@ -107,4 +107,15 @@ public class ScheduleController {
                                 .result(scheduleService.getMaintenanceHistory(deviceId, page, size))
                                 .build();
         }
+
+        @GetMapping("/public/history")
+        public ApiResponse<Page<ScheduleResponse>> getPublicHistory(
+                @RequestParam(required = false) String deviceId,
+                @RequestParam(defaultValue = "0") int page,
+                @RequestParam(defaultValue = "10") int size
+        ) {
+        return ApiResponse.<Page<ScheduleResponse>>builder()
+                .result(scheduleService.getMaintenanceHistoryPublic(deviceId, page, size))
+                .build();
+        }
 }
